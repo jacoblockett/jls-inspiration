@@ -1,14 +1,11 @@
 {
-  "name": "jls-inspiration-tools",
+  "name": "chamsay-tools",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@12.5.1",
   "scripts": {
     "screenshot": "bun screenshot.mjs",
-    "history": "bun history.mjs",
-    "inspiration": "bun inspiration.mjs",
-    "test": "bun test",
-    "build": "bun build inspiration.mjs --compile --minify --external typescript --outfile inspiration"
+    "build": "bun build screenshot.mjs --compile --minify --external typescript --outfile screenshot.exe"
   },
   "dependencies": {
     "puppeteer": "^24.20.0"
