@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { canonicalizeUrl, getEntry, initialize, seen, touch } from "./history.mjs";
+import { canonicalizeUrl, getEntry, initialize, listEntries, searchEntries, seen, touch } from "./history.mjs";
 
 const roots = [];
 function root() {
@@ -65,6 +65,50 @@ describe("history", () => {
     expect(entry.auditor_verdict).toBeNull();
     expect(entry.artifacts[0].researcher_verdict).toBe("accepted");
     expect(entry.artifacts[0].auditor_verdict).toBe("rejected");
+  });
+
+
+  test("replacing bytes at the same artifact path does not retain a stale hash row", () => {
+    const project = root();
+    const artifact = path.join(project, "capture.png");
+    writeFileSync(artifact, "first");
+    touch(project, "https://example.com/capture", { track: "visual", stage: "captured", artifact });
+    writeFileSync(artifact, "second");
+    touch(project, "https://example.com/capture", { track: "visual", stage: "captured", artifact });
+    const [entry] = getEntry(project, "https://example.com/capture", "visual");
+    expect(entry.artifacts).toHaveLength(1);
+  });
+
+  test("list verdict filters include artifact-level auditor judgments", () => {
+    const project = root();
+    const artifact = path.join(project, "accepted.png");
+    writeFileSync(artifact, "accepted");
+    touch(project, "https://example.com/accepted", { track: "visual", stage: "captured", artifact });
+    touch(project, "https://example.com/accepted", {
+      track: "visual",
+      stage: "accepted",
+      actor: "auditor",
+      artifact,
+      note: "Visible evidence checks out",
+    });
+    const entries = listEntries(project, { track: "visual", verdict: "accepted" });
+    expect(entries.map((entry) => entry.canonical_url)).toContain("https://example.com/accepted");
+    expect(entries[0].artifacts[0].auditor_verdict).toBe("accepted");
+  });
+
+  test("search includes artifact notes and paths", () => {
+    const project = root();
+    const artifact = path.join(project, "hierarchy.png");
+    writeFileSync(artifact, "hierarchy");
+    touch(project, "https://example.com/hierarchy", { track: "visual", stage: "captured", artifact });
+    touch(project, "https://example.com/hierarchy", {
+      track: "visual",
+      stage: "accepted",
+      artifact,
+      note: "Distinctive navigation hierarchy",
+    });
+    expect(searchEntries(project, "Distinctive navigation", "visual")).toHaveLength(1);
+    expect(searchEntries(project, "hierarchy.png", "visual")).toHaveLength(1);
   });
 
   test("records artifact hashes and independent researcher/auditor judgments", () => {
