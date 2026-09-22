@@ -122,7 +122,23 @@ export function openHistory(root, create = false) {
     );
     CREATE INDEX IF NOT EXISTS sources_domain_idx ON sources(domain);
     CREATE INDEX IF NOT EXISTS artifacts_sha_idx ON artifacts(sha256);
+    CREATE INDEX IF NOT EXISTS artifacts_source_path_idx ON artifacts(source_id, path);
   `);
+
+  // Inspiration state is durable across skill updates. CREATE TABLE IF NOT EXISTS
+  // does not add later columns, so apply additive migrations explicitly.
+  const artifactColumns = new Set(db.query("PRAGMA table_info(artifacts)").all().map((row) => row.name));
+  for (const [name, definition] of [
+    ["researcher_inspected_at", "TEXT"],
+    ["researcher_verdict", "TEXT"],
+    ["researcher_note", "TEXT"],
+    ["auditor_inspected_at", "TEXT"],
+    ["auditor_verdict", "TEXT"],
+    ["auditor_note", "TEXT"],
+  ]) {
+    if (!artifactColumns.has(name)) db.exec(`ALTER TABLE artifacts ADD COLUMN ${name} ${definition}`);
+  }
+
   return { db, paths };
 }
 
@@ -174,10 +190,17 @@ function attachArtifact(db, sourceId, file) {
     ORDER BY a.id
     LIMIT 1
   `).get(sha, sourceId);
+  // A path names the evidence currently on disk. If it is re-used for a
+  // different capture, remove the stale hash row so history never claims that
+  // overwritten bytes are still inspectable at that path.
+  db.query("DELETE FROM artifacts WHERE source_id = ? AND path = ? AND sha256 != ?").run(sourceId, resolved, sha);
   db.query(`
     INSERT INTO artifacts(source_id, path, sha256, media_type, created_at)
     VALUES (?, ?, ?, ?, ?)
-    ON CONFLICT(source_id, sha256) DO UPDATE SET path = excluded.path
+    ON CONFLICT(source_id, sha256) DO UPDATE SET
+      path = excluded.path,
+      media_type = excluded.media_type,
+      created_at = excluded.created_at
   `).run(sourceId, resolved, sha, mediaType(resolved), now());
   return {
     ...db.query("SELECT * FROM artifacts WHERE source_id = ? AND sha256 = ?").get(sourceId, sha),
@@ -291,14 +314,28 @@ export function listEntries(root, { track, verdict, limit = 200 } = {}) {
   try {
     const clauses = [];
     const params = [];
-    if (track) { clauses.push("track = ?"); params.push(track); }
+    if (track) { clauses.push("s.track = ?"); params.push(track); }
     if (verdict) {
       if (!["accepted", "rejected", "pending"].includes(verdict)) throw new Error("--verdict must be accepted, rejected, or pending");
-      if (verdict === "pending") clauses.push("auditor_verdict IS NULL");
-      else { clauses.push("auditor_verdict = ?"); params.push(verdict); }
+      if (verdict === "pending") {
+        clauses.push(`(
+          (NOT EXISTS (SELECT 1 FROM artifacts a WHERE a.source_id = s.id) AND s.auditor_verdict IS NULL)
+          OR EXISTS (SELECT 1 FROM artifacts a WHERE a.source_id = s.id AND a.auditor_verdict IS NULL)
+        )`);
+      } else {
+        clauses.push(`(
+          s.auditor_verdict = ?
+          OR EXISTS (SELECT 1 FROM artifacts a WHERE a.source_id = s.id AND a.auditor_verdict = ?)
+        )`);
+        params.push(verdict, verdict);
+      }
     }
     const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
-    return db.query(`SELECT * FROM sources ${where} ORDER BY id DESC LIMIT ?`).all(...params, parsedLimit);
+    const rows = db.query(`SELECT s.* FROM sources s ${where} ORDER BY s.id DESC LIMIT ?`).all(...params, parsedLimit);
+    return rows.map((row) => ({
+      ...row,
+      artifacts: db.query("SELECT * FROM artifacts WHERE source_id = ? ORDER BY id").all(row.id),
+    }));
   } finally {
     db.close();
   }
@@ -311,18 +348,30 @@ export function searchEntries(root, query, track, limit = 100) {
   const { db } = openHistory(root);
   try {
     const term = `%${query}%`;
-    if (track) {
-      return db.query(`
-        SELECT * FROM sources
-        WHERE track = ? AND (canonical_url LIKE ? OR original_url LIKE ? OR domain LIKE ? OR researcher_note LIKE ? OR auditor_note LIKE ?)
-        ORDER BY id DESC LIMIT ?
-      `).all(track, term, term, term, term, term, parsedLimit);
-    }
-    return db.query(`
-      SELECT * FROM sources
-      WHERE canonical_url LIKE ? OR original_url LIKE ? OR domain LIKE ? OR researcher_note LIKE ? OR auditor_note LIKE ?
-      ORDER BY id DESC LIMIT ?
-    `).all(term, term, term, term, term, parsedLimit);
+    const trackClause = track ? "s.track = ? AND " : "";
+    const params = track ? [track] : [];
+    params.push(term, term, term, term, term, term, term, term, parsedLimit);
+    const rows = db.query(`
+      SELECT DISTINCT s.*
+      FROM sources s
+      LEFT JOIN artifacts a ON a.source_id = s.id
+      WHERE ${trackClause}(
+        s.canonical_url LIKE ?
+        OR s.original_url LIKE ?
+        OR s.domain LIKE ?
+        OR s.researcher_note LIKE ?
+        OR s.auditor_note LIKE ?
+        OR a.path LIKE ?
+        OR a.researcher_note LIKE ?
+        OR a.auditor_note LIKE ?
+      )
+      ORDER BY s.id DESC
+      LIMIT ?
+    `).all(...params);
+    return rows.map((row) => ({
+      ...row,
+      artifacts: db.query("SELECT * FROM artifacts WHERE source_id = ? ORDER BY id").all(row.id),
+    }));
   } finally {
     db.close();
   }
