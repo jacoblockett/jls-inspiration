@@ -31,7 +31,7 @@ For every retained item test:
 Also audit the set as a whole for missing brief-supported directions and a credible saturation claim.
 
 Record auditor inspection/judgment in durable history for each reviewed source when practical:
-`{{INSPIRATION_CLI}} history touch <url> --track visual --stage <inspected|accepted|rejected> --actor auditor ... --path PROJECT_ROOT`
+`{{INSPIRATION_CLI}} history touch <url> --track visual --stage <inspected|accepted|rejected> --actor auditor --artifact <path> ... --path PROJECT_ROOT`
 
 ## Verdicts
 
