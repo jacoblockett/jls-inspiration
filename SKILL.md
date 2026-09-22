@@ -91,7 +91,7 @@ The briefing specialist decides what is research-driving. For example, a project
 
 ## Visual research transaction
 
-Use `.inspiration/work/visual-research.md` for the current visual packet and `.inspiration/work/visual-audit.md` for its audit.
+Use `.inspiration/work/visual-research.md` for the current visual packet, `.inspiration/work/visual-audit.md` for its audit, and `.inspiration/assets/visual/` for visual evidence.
 
 1. Spawn `inspiration-visual-researcher` in `INITIAL` mode with `PROJECT_ROOT`, `BRIEF_PATH`, `PACKET_PATH`, and the research goal.
 2. The researcher must query history before materially investigating a candidate URL.
@@ -107,7 +107,7 @@ Visual saturation means additional sources are no longer contributing materially
 
 ## Product/UX research transaction
 
-Use `.inspiration/work/product-research.md` and `.inspiration/work/product-audit.md`.
+Use `.inspiration/work/product-research.md`, `.inspiration/work/product-audit.md`, and `.inspiration/assets/product/` for any captured product/interface evidence.
 
 1. Spawn `inspiration-product-researcher` in `INITIAL` mode with the approved brief, paths, and research goal.
 2. Weight evidence in this order unless the specific question justifies otherwise:
