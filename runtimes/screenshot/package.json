@@ -1,5 +1,5 @@
 {
-  "name": "chamsay-tools",
+  "name": "screenshot",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@12.5.1",
