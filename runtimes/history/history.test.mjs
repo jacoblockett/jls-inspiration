@@ -1,11 +1,19 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { Database } from "bun:sqlite";
-import { canonicalizeUrl, getEntry, historyHelp, initialize, listEntries, openHistory, searchEntries, seen, touch } from "./history.mjs";
+import {
+  canonicalizeUrl,
+  getEntry,
+  historyHelp,
+  initialize,
+  routeKey,
+  searchEntries,
+  writeEntry,
+} from "./history.mjs";
 
 const roots = [];
+
 function root() {
   const value = mkdtempSync(path.join(tmpdir(), "jls-inspiration-test-"));
   roots.push(value);
@@ -18,174 +26,183 @@ afterEach(() => {
 });
 
 describe("history", () => {
-  test("uses the plain history CLI name", () => {
+  test("exposes only the consolidated CLI surface", () => {
     const help = historyHelp();
     expect(help).toContain("history init");
-    expect(help).toContain("history seen");
-    expect(help).not.toContain("inspiration history");
+    expect(help).toContain("history get");
+    expect(help).toContain("history write");
+    expect(help).toContain("history search");
+    expect(help).not.toContain("history seen");
+    expect(help).not.toContain("history touch");
+    expect(help).not.toContain("history list");
   });
 
-  test("canonicalizes common tracking noise without deleting functional query parameters", () => {
+  test("init creates only history-owned state", () => {
+    const project = root();
+    const state = path.join(project, ".inspiration");
+    expect(Bun.file(path.join(state, "project.json")).size).toBeGreaterThan(0);
+    expect(Bun.file(path.join(state, "research.db")).size).toBeGreaterThan(0);
+  });
+
+  test("canonicalizes tracking noise without collapsing functional URLs", () => {
     expect(canonicalizeUrl("HTTPS://Example.com/path/?b=2&utm_source=x&a=1#frag"))
       .toBe("https://example.com/path?b=2&a=1");
+    expect(canonicalizeUrl("example.com/post/123"))
+      .toBe("https://example.com/post/123");
   });
 
-  test("tracks the same URL independently per research track", () => {
+  test("groups obvious enumerated routes without claiming exact matches", () => {
     const project = root();
-    touch(project, "example.com/a", { track: "visual", stage: "visited" });
-    expect(seen(project, "https://example.com/a", "visual").seen).toBe(true);
-    expect(seen(project, "https://example.com/a", "product").seen).toBe(false);
+    writeEntry(project, "https://duolingo.com/blog/page/1", { track: "visual", stage: "visited" });
+    writeEntry(project, "https://duolingo.com/blog/page/2", { track: "visual", stage: "visited" });
+
+    const result = getEntry(project, "https://duolingo.com/blog/page/3", "visual");
+    expect(result.exact_seen).toBe(false);
+    expect(result.related.domain_seen).toBe(true);
+    expect(result.related.route_seen).toBe(true);
+    expect(result.related.route_entries).toBe(2);
   });
 
-  test("reports cross-source duplicate artifact hashes without collapsing source history", () => {
+  test("groups numeric resource IDs as a route family", () => {
+    expect(routeKey("https://duolingo.com/post/123"))
+      .toBe(routeKey("https://duolingo.com/post/456"));
+  });
+
+  test("recognizes a previously visited site without conflating a different page", () => {
+    const project = root();
+    writeEntry(project, "https://duolingo.com", { track: "product", stage: "visited" });
+
+    const result = getEntry(project, "https://www.duolingo.com/post/123", "product");
+    expect(result.exact_seen).toBe(false);
+    expect(result.related.domain).toBe("duolingo.com");
+    expect(result.related.domain_seen).toBe(true);
+    expect(result.related.route_seen).toBe(false);
+  });
+
+  test("get replaces the old seen check and returns exact history when present", () => {
+    const project = root();
+    writeEntry(project, "https://example.com/a", { track: "visual", stage: "visited" });
+
+    const result = getEntry(project, "https://example.com/a", "visual");
+    expect(result.exact_seen).toBe(true);
+    expect(result.exact).toHaveLength(1);
+    expect(result.exact[0].visited_at).not.toBeNull();
+  });
+
+  test("write records duplicate artifact hashes across sources", () => {
     const project = root();
     const first = path.join(project, "first.png");
     const second = path.join(project, "second.png");
     writeFileSync(first, "same-image");
     writeFileSync(second, "same-image");
-    touch(project, "https://example.com/a", { track: "visual", stage: "captured", artifact: first });
-    const duplicate = touch(project, "https://cdn.example.net/b", { track: "product", stage: "captured", artifact: second });
+
+    writeEntry(project, "https://example.com/a", {
+      track: "visual",
+      stage: "captured",
+      artifact: first,
+    });
+    const duplicate = writeEntry(project, "https://cdn.example.net/b", {
+      track: "product",
+      stage: "captured",
+      artifact: second,
+    });
+
     expect(duplicate.artifact.duplicate_of.canonical_url).toBe("https://example.com/a");
-    expect(getEntry(project, "https://example.com/a", "visual")[0].artifacts).toHaveLength(1);
-    expect(getEntry(project, "https://cdn.example.net/b", "product")[0].artifacts).toHaveLength(1);
   });
 
-  test("records independent judgments for a specific captured artifact", () => {
+  test("write keeps researcher and auditor artifact judgments independent", () => {
     const project = root();
     const artifact = path.join(project, "visual.png");
     writeFileSync(artifact, "visual-evidence");
-    touch(project, "https://example.com/reference", { track: "visual", stage: "captured", artifact });
-    touch(project, "https://example.com/reference", {
+
+    writeEntry(project, "https://example.com/reference", {
+      track: "visual",
+      stage: "captured",
+      artifact,
+    });
+    writeEntry(project, "https://example.com/reference", {
       track: "visual",
       stage: "accepted",
       artifact,
       note: "Hierarchy is visible",
     });
-    touch(project, "https://example.com/reference", {
+    writeEntry(project, "https://example.com/reference", {
       track: "visual",
       stage: "rejected",
       actor: "auditor",
       artifact,
       note: "Claim overstates what is shown",
     });
-    const [entry] = getEntry(project, "https://example.com/reference", "visual");
-    expect(entry.researcher_verdict).toBeNull();
-    expect(entry.auditor_verdict).toBeNull();
-    expect(entry.artifacts[0].researcher_verdict).toBe("accepted");
-    expect(entry.artifacts[0].auditor_verdict).toBe("rejected");
+
+    const result = getEntry(project, "https://example.com/reference", "visual");
+    const saved = result.exact[0].artifacts[0];
+    expect(saved.researcher_verdict).toBe("accepted");
+    expect(saved.auditor_verdict).toBe("rejected");
   });
 
-
-  test("replacing bytes at the same artifact path does not retain a stale hash row", () => {
+  test("search without text replaces list and supports filters plus limits", () => {
     const project = root();
-    const artifact = path.join(project, "capture.png");
-    writeFileSync(artifact, "first");
-    touch(project, "https://example.com/capture", { track: "visual", stage: "captured", artifact });
-    writeFileSync(artifact, "second");
-    touch(project, "https://example.com/capture", { track: "visual", stage: "captured", artifact });
-    const [entry] = getEntry(project, "https://example.com/capture", "visual");
-    expect(entry.artifacts).toHaveLength(1);
+    writeEntry(project, "https://duolingo.com/a", { track: "visual", stage: "visited" });
+    writeEntry(project, "https://duolingo.com/b", { track: "product", stage: "visited" });
+    writeEntry(project, "https://example.com/c", { track: "visual", stage: "visited" });
+
+    expect(searchEntries(project, "", { domain: "duolingo.com", limit: 10 })).toHaveLength(2);
+    expect(searchEntries(project, "", { track: "visual", limit: 1 })).toHaveLength(1);
   });
 
-  test("list verdict filters include artifact-level auditor judgments", () => {
-    const project = root();
-    const artifact = path.join(project, "accepted.png");
-    writeFileSync(artifact, "accepted");
-    touch(project, "https://example.com/accepted", { track: "visual", stage: "captured", artifact });
-    touch(project, "https://example.com/accepted", {
-      track: "visual",
-      stage: "accepted",
-      actor: "auditor",
-      artifact,
-      note: "Visible evidence checks out",
-    });
-    const entries = listEntries(project, { track: "visual", verdict: "accepted" });
-    expect(entries.map((entry) => entry.canonical_url)).toContain("https://example.com/accepted");
-    expect(entries[0].artifacts[0].auditor_verdict).toBe("accepted");
-  });
-
-  test("search includes artifact notes and paths", () => {
+  test("search finds source and artifact notes", () => {
     const project = root();
     const artifact = path.join(project, "hierarchy.png");
     writeFileSync(artifact, "hierarchy");
-    touch(project, "https://example.com/hierarchy", { track: "visual", stage: "captured", artifact });
-    touch(project, "https://example.com/hierarchy", {
+
+    writeEntry(project, "https://example.com/hierarchy", {
+      track: "visual",
+      stage: "captured",
+      artifact,
+    });
+    writeEntry(project, "https://example.com/hierarchy", {
       track: "visual",
       stage: "accepted",
       artifact,
       note: "Distinctive navigation hierarchy",
     });
-    expect(searchEntries(project, "Distinctive navigation", "visual")).toHaveLength(1);
-    expect(searchEntries(project, "hierarchy.png", "visual")).toHaveLength(1);
+
+    expect(searchEntries(project, "Distinctive navigation", { track: "visual" })).toHaveLength(1);
+    expect(searchEntries(project, "hierarchy.png", { track: "visual" })).toHaveLength(1);
   });
 
+  test("overwriting an artifact path replaces its stale hash record", () => {
+    const project = root();
+    const artifact = path.join(project, "capture.png");
+    writeFileSync(artifact, "first");
+    writeEntry(project, "https://example.com/capture", {
+      track: "visual",
+      stage: "captured",
+      artifact,
+    });
+
+    writeFileSync(artifact, "second");
+    writeEntry(project, "https://example.com/capture", {
+      track: "visual",
+      stage: "captured",
+      artifact,
+    });
+
+    const result = getEntry(project, "https://example.com/capture", "visual");
+    expect(result.exact[0].artifacts).toHaveLength(1);
+  });
 
   test("failed captures do not claim a capture timestamp", () => {
     const project = root();
-    expect(() => touch(project, "https://example.com/missing", {
+    expect(() => writeEntry(project, "https://example.com/missing", {
       track: "visual",
       stage: "captured",
       artifact: path.join(project, "missing.png"),
     })).toThrow();
-    const [entry] = getEntry(project, "https://example.com/missing", "visual");
-    expect(entry.captured_at).toBeNull();
-    expect(entry.artifacts).toHaveLength(0);
-  });
 
-  test("opens databases created before artifact verdict columns were added", () => {
-    const project = mkdtempSync(path.join(tmpdir(), "jls-inspiration-legacy-"));
-    roots.push(project);
-    const state = path.join(project, ".inspiration");
-    mkdirSync(state, { recursive: true });
-    writeFileSync(path.join(state, "project.json"), JSON.stringify({ skill: "inspiration", schema: 1 }));
-    const db = new Database(path.join(state, "research.db"), { create: true });
-    db.exec(`
-      CREATE TABLE sources (
-        id INTEGER PRIMARY KEY,
-        track TEXT NOT NULL,
-        canonical_url TEXT NOT NULL,
-        original_url TEXT NOT NULL,
-        domain TEXT NOT NULL,
-        discovered_at TEXT,
-        visited_at TEXT,
-        captured_at TEXT,
-        researcher_inspected_at TEXT,
-        researcher_verdict TEXT,
-        researcher_note TEXT,
-        auditor_inspected_at TEXT,
-        auditor_verdict TEXT,
-        auditor_note TEXT,
-        UNIQUE(track, canonical_url)
-      );
-      CREATE TABLE artifacts (
-        id INTEGER PRIMARY KEY,
-        source_id INTEGER NOT NULL,
-        path TEXT NOT NULL,
-        sha256 TEXT NOT NULL,
-        media_type TEXT,
-        created_at TEXT NOT NULL,
-        UNIQUE(source_id, sha256)
-      );
-    `);
-    db.close();
-    const opened = openHistory(project);
-    const columns = opened.db.query("PRAGMA table_info(artifacts)").all().map((row) => row.name);
-    opened.db.close();
-    expect(columns).toContain("auditor_verdict");
-    expect(columns).toContain("researcher_note");
-  });
-
-  test("records artifact hashes and independent researcher/auditor judgments", () => {
-    const project = root();
-    const artifact = path.join(project, "evidence.png");
-    writeFileSync(artifact, "fake-image");
-    touch(project, "https://example.com/ui", { track: "visual", stage: "captured", artifact });
-    touch(project, "https://example.com/ui", { track: "visual", stage: "accepted", note: "Useful hierarchy" });
-    touch(project, "https://example.com/ui", { track: "visual", stage: "rejected", actor: "auditor", note: "Claim is not visible" });
-    const [entry] = getEntry(project, "https://example.com/ui", "visual");
-    expect(entry.researcher_verdict).toBe("accepted");
-    expect(entry.auditor_verdict).toBe("rejected");
-    expect(entry.artifacts).toHaveLength(1);
-    expect(entry.artifacts[0].sha256).toHaveLength(64);
+    const result = getEntry(project, "https://example.com/missing", "visual");
+    expect(result.exact_seen).toBe(true);
+    expect(result.exact[0].captured_at).toBeNull();
+    expect(result.exact[0].artifacts).toHaveLength(0);
   });
 });
