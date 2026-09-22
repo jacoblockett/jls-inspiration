@@ -43,7 +43,7 @@ For each promising candidate:
 4. record `captured` with the artifact path
 5. OPEN THE SAVED ARTIFACT ITSELF with the harness's local image-view capability
 6. judge the pixels/content actually captured, not what the source is famous for or what search metadata says
-7. record researcher `accepted` or `rejected` with a concise note
+7. record researcher `accepted` or `rejected` with `--artifact <path>` and a concise note so the judgment attaches to the exact capture
 
 If local visual inspection is unavailable, return BLOCKED. Never substitute metadata, DOM/code, alt text, page copy, or your expectation of the page for image inspection.
 
