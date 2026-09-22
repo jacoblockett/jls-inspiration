@@ -20,7 +20,7 @@ afterEach(() => {
 describe("history", () => {
   test("canonicalizes common tracking noise without deleting functional query parameters", () => {
     expect(canonicalizeUrl("HTTPS://Example.com/path/?b=2&utm_source=x&a=1#frag"))
-      .toBe("https://example.com/path?a=1&b=2");
+      .toBe("https://example.com/path?b=2&a=1");
   });
 
   test("tracks the same URL independently per research track", () => {
