@@ -27,7 +27,7 @@ Each track has its own researcher and independent auditor. Raw project ideation 
 9. Researchers query durable history globally before revisiting a URL so prior work in either track is visible. Every materially inspected source is logged for the active track, and captured artifact hashes are used to flag duplicate evidence.
 10. Auditors independently inspect accepted evidence and may reject, request replacement, or identify research gaps. They do not merely critique prose.
 11. Repair loops preserve valid accepted work. Do not restart broad research because one subset failed review.
-12. If the same material deficiency makes no progress across three distinct repair strategies, stop as stalled instead of looping indefinitely.
+12. Repair loops continue against stable deficiency IDs until the auditor passes or a genuine external blocker prevents further research. Never lower the acceptance bar merely to end the loop.
 13. The synthesizer receives only the approved brief and reviewer-PASSed research packets. It performs no new research.
 14. The final report is research guidance, not a hidden design specification. Preserve uncertainty, alternatives, and explicit "take/leave" boundaries.
 
@@ -101,7 +101,7 @@ Use `.inspiration/work/visual-research.md` for the current visual packet, `.insp
 6. On `PASS`, continue to product/UX research.
 7. On `REPAIR`, rerun the visual researcher in `REPAIR` mode with the audit path and prior repair history. Preserve accepted material and address only the rejected references/gaps plus direct consequences. Re-audit.
 8. On `BLOCKED`, surface only the external capability or missing authority that actually prevents completion.
-9. If three materially different repair strategies fail to improve the same deficiency, mark the visual track stalled and stop.
+9. Continue targeted researcher/auditor repair cycles until PASS or a genuine external blocker. Preserve accepted work and stable deficiency IDs across cycles.
 
 Visual saturation means additional sources are no longer contributing materially new visual directions, interaction-presentation ideas, or design principles. It does not mean every industry/category has been sampled.
 
@@ -120,7 +120,7 @@ Use `.inspiration/work/product-research.md`, `.inspiration/work/product-audit.md
 5. Spawn `inspiration-product-auditor` after READY.
 6. On `REPAIR`, rerun only targeted product research with the audit deficiencies and prior repair history, then re-audit.
 7. On `PASS`, continue to synthesis. On `BLOCKED`, surface the actual blocker.
-8. Apply the same three-no-progress-strategies stall rule.
+8. Continue targeted researcher/auditor repair cycles until PASS or a genuine external blocker, preserving accepted work and stable deficiency IDs.
 
 Product/UX saturation means new sources are no longer adding materially new, well-supported lessons relevant to the brief.
 
