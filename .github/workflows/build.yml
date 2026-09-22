@@ -160,13 +160,16 @@ jobs:
         with:
           bun-version: 1.4.0
 
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.5.1
+          run_install: false
+
       - name: Install screenshot build dependency
         shell: bash
         env:
           PUPPETEER_SKIP_DOWNLOAD: 'true'
-        run: |
-          cd runtimes/screenshot
-          bun install
+        run: pnpm --dir runtimes/screenshot install --frozen-lockfile
 
       - name: Run history regressions
         if: matrix.target == 'linux-x64-gnu'
