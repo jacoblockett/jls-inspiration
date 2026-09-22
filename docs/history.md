@@ -1,12 +1,19 @@
 # History Runtime
 
-`history` is the SQLite interface used to persist Inspiration research history.
+`history` persists Inspiration research history in project-local SQLite state.
 
-It is independent from the screenshot tool. Its source lives under `history/`, and target builds produce `bin/history` or `bin/history.exe`.
+Source: `history/history.mjs`  
+Release executable: `bin/history` or `bin/history.exe`
 
 ## Project state
 
-The runtime owns only:
+Initialize a project with:
+
+```text
+history init [--path <project>]
+```
+
+This creates:
 
 ```text
 .inspiration/
@@ -14,7 +21,7 @@ The runtime owns only:
 └── research.db
 ```
 
-Other Inspiration working files are outside the history runtime's responsibility.
+If `--path` is omitted, the current directory is used. Access `research.db` through the CLI rather than editing it directly.
 
 ## Commands
 
@@ -25,44 +32,49 @@ history write <url> --track visual|product --stage <stage> [options]
 history search [text] [filters]
 ```
 
-Run `history --help`, `history help <command>`, or `history <command> --help` for the full CLI reference.
+Run `history --help`, `history help <command>`, or `history <command> --help` for the complete CLI reference.
 
-### init
+### `get`
 
-Initializes `.inspiration/project.json` and `.inspiration/research.db` for the selected project. The current directory is used when `--path` is omitted.
+`get` is read-only. It canonicalizes the URL and reports three levels of prior history:
 
-### get
+- `exact_seen`: the canonical URL has a stored record.
+- `route_seen`: another stored URL matches the same conservative route family.
+- `domain_seen`: another stored URL exists on the same site.
 
-Reads history for one URL without writing anything. The result distinguishes:
+Route-family matching recognizes numeric IDs, UUIDs, long hexadecimal IDs, numbered page segments, and common numeric pagination parameters. Related URLs never count as exact visits.
 
-- `exact_seen`: the exact canonical URL has been recorded.
-- `route_seen`: other recorded URLs belong to the same obvious enumerated/resource route family.
-- `domain_seen`: other recorded URLs exist on the same site.
+### `write`
 
-Related URLs never become exact visits. For example, prior visits to `/blog/page/1` and `/blog/page/2` can make `/blog/page/3` a route-family match without claiming page 3 was visited.
+`write` records activity for one URL.
 
-The route-family heuristic recognizes obvious numeric IDs, UUIDs, long hexadecimal IDs, numbered page path segments, and common numeric pagination query parameters. It is intentionally conservative rather than treating arbitrary slugs as equivalent.
-
-### write
-
-Records research activity for one URL.
-
-Stages are:
+Stages:
 
 - `discovered`: found as a candidate.
 - `visited`: materially inspected.
-- `captured`: saved evidence was captured; requires `--artifact`.
+- `captured`: saved evidence was captured. Requires `--artifact`.
 - `inspected`: a source or registered artifact was inspected.
-- `accepted`: researcher or auditor accepted the source/artifact.
-- `rejected`: researcher or auditor rejected the source/artifact.
+- `accepted`: accepted by the researcher or auditor.
+- `rejected`: rejected by the researcher or auditor.
 
-`--actor` is `researcher` by default and may be set to `auditor`. Artifact-level judgments use `--artifact <file>`. Captured artifacts are SHA-256 hashed so duplicate evidence can be identified across sources.
+Options:
 
-### search
+```text
+--actor researcher|auditor
+--artifact <file>
+--note <text>
+--path <project>
+```
 
-Searches recorded URLs, domains, notes, and artifact paths. Search text is optional, so the same command also handles filtered browsing without a separate list operation.
+`--actor` defaults to `researcher`. Auditors may record only `inspected`, `accepted`, or `rejected`.
 
-Available filters:
+Artifact-level judgments require the artifact to have already been registered with `captured`. Captured files are SHA-256 hashed so duplicate evidence can be detected across sources.
+
+### `search`
+
+`search` queries recorded URLs, domains, notes, and artifact paths. Search text is optional.
+
+Filters:
 
 ```text
 --track visual|product
