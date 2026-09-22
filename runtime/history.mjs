@@ -43,9 +43,9 @@ export function canonicalizeUrl(value) {
   for (const key of [...url.searchParams.keys()]) {
     if (key.toLowerCase().startsWith("utm_") || TRACKING_PARAMS.has(key.toLowerCase())) url.searchParams.delete(key);
   }
-  const sorted = [...url.searchParams.entries()].sort(([ak, av], [bk, bv]) => ak.localeCompare(bk) || av.localeCompare(bv));
-  url.search = "";
-  for (const [key, valuePart] of sorted) url.searchParams.append(key, valuePart);
+  // Preserve remaining query order. Reordering functional parameters can change
+  // semantics on some sites, and a false "already seen" match is worse than a
+  // harmless duplicate visit.
   if (url.pathname !== "/") url.pathname = url.pathname.replace(/\/+$/, "") || "/";
   return url.href;
 }
