@@ -5,6 +5,10 @@ import process from "node:process";
 import { captureMain } from "./screenshot.mjs";
 import { historyMain, initialize, openHistory } from "./history.mjs";
 
+// Keep this runtime deliberately thin. Inspiration's research/orchestration semantics
+// live in SKILL.md and the registered specialists; this binary only provides local
+// capture and durable-history primitives that those agents can call.
+
 function help() {
   return `Usage:\n  inspiration init [--path <project>]\n  inspiration status [--path <project>]\n  inspiration capture <url> [flags]\n  inspiration history <command> [args]\n\nCommands:\n  init      Initialize .inspiration durable research state\n  status    Report Inspiration state paths and source counts\n  capture   Screenshot HTML or download a direct media URL\n  history   Query and update durable research history`;
 }
