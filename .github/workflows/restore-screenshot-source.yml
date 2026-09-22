@@ -1,0 +1,33 @@
+name: Restore Screenshot Source
+
+on:
+  push:
+    paths:
+      - .github/workflows/restore-screenshot-source.yml
+
+permissions:
+  contents: write
+
+jobs:
+  restore:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Restore exact supplied lockfile
+        shell: bash
+        run: |
+          set -euo pipefail
+          gzip -dc runtimes/screenshot/pnpm-lock.yaml.gz > runtimes/screenshot/pnpm-lock.yaml
+
+          [[ "$(git hash-object runtimes/screenshot/package.json)" == "b4fa322c3ee6b8fca5ccea80edc17c7ec935d7ed" ]]
+          [[ "$(git hash-object runtimes/screenshot/pnpm-lock.yaml)" == "8911f2947ef9e81dbcdb14623f394a2135a864b1" ]]
+          [[ "$(git hash-object runtimes/screenshot/pnpm-workspace.yaml)" == "13e38a56aed7fe8fedb7debaa0082da2b459d729" ]]
+          [[ "$(git hash-object runtimes/screenshot/screenshot.mjs)" == "ba996bef1e8f857e1be2ff2f0943d9977b919350" ]]
+
+          git rm runtimes/screenshot/pnpm-lock.yaml.gz .github/workflows/restore-screenshot-source.yml
+          git add runtimes/screenshot/pnpm-lock.yaml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Restore supplied screenshot source verbatim'
+          git push origin HEAD:main
