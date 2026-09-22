@@ -1,8 +1,9 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { canonicalizeUrl, getEntry, initialize, listEntries, searchEntries, seen, touch } from "./history.mjs";
+import { Database } from "bun:sqlite";
+import { canonicalizeUrl, getEntry, initialize, listEntries, openHistory, searchEntries, seen, touch } from "./history.mjs";
 
 const roots = [];
 function root() {
@@ -109,6 +110,62 @@ describe("history", () => {
     });
     expect(searchEntries(project, "Distinctive navigation", "visual")).toHaveLength(1);
     expect(searchEntries(project, "hierarchy.png", "visual")).toHaveLength(1);
+  });
+
+
+  test("failed captures do not claim a capture timestamp", () => {
+    const project = root();
+    expect(() => touch(project, "https://example.com/missing", {
+      track: "visual",
+      stage: "captured",
+      artifact: path.join(project, "missing.png"),
+    })).toThrow();
+    const [entry] = getEntry(project, "https://example.com/missing", "visual");
+    expect(entry.captured_at).toBeNull();
+    expect(entry.artifacts).toHaveLength(0);
+  });
+
+  test("opens databases created before artifact verdict columns were added", () => {
+    const project = mkdtempSync(path.join(tmpdir(), "jls-inspiration-legacy-"));
+    roots.push(project);
+    const state = path.join(project, ".inspiration");
+    mkdirSync(state, { recursive: true });
+    writeFileSync(path.join(state, "project.json"), JSON.stringify({ skill: "inspiration", schema: 1 }));
+    const db = new Database(path.join(state, "research.db"), { create: true });
+    db.exec(`
+      CREATE TABLE sources (
+        id INTEGER PRIMARY KEY,
+        track TEXT NOT NULL,
+        canonical_url TEXT NOT NULL,
+        original_url TEXT NOT NULL,
+        domain TEXT NOT NULL,
+        discovered_at TEXT,
+        visited_at TEXT,
+        captured_at TEXT,
+        researcher_inspected_at TEXT,
+        researcher_verdict TEXT,
+        researcher_note TEXT,
+        auditor_inspected_at TEXT,
+        auditor_verdict TEXT,
+        auditor_note TEXT,
+        UNIQUE(track, canonical_url)
+      );
+      CREATE TABLE artifacts (
+        id INTEGER PRIMARY KEY,
+        source_id INTEGER NOT NULL,
+        path TEXT NOT NULL,
+        sha256 TEXT NOT NULL,
+        media_type TEXT,
+        created_at TEXT NOT NULL,
+        UNIQUE(source_id, sha256)
+      );
+    `);
+    db.close();
+    const opened = openHistory(project);
+    const columns = opened.db.query("PRAGMA table_info(artifacts)").all().map((row) => row.name);
+    opened.db.close();
+    expect(columns).toContain("auditor_verdict");
+    expect(columns).toContain("researcher_note");
   });
 
   test("records artifact hashes and independent researcher/auditor judgments", () => {
