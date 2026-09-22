@@ -1,42 +1,68 @@
 # Screenshot Tool
 
-`screenshot` is the independent Puppeteer-based capture/download tool supplied for Inspiration research.
+`screenshot` captures visual evidence from URLs for Inspiration research.
 
-Its source lives under `screenshot/`. Target builds produce `bin/screenshot` or `bin/screenshot.exe`.
+Source: `screenshot/screenshot.mjs`  
+Release executable: `bin/screenshot` or `bin/screenshot.exe`
 
-## Source provenance
-
-The repository preserves the supplied unbuilt screenshot source files verbatim:
+## Usage
 
 ```text
-screenshot/
-├── package.json
-├── pnpm-lock.yaml
-├── pnpm-workspace.yaml
-└── screenshot.mjs
+screenshot <url> [flags]
 ```
 
-The prebuilt `screenshot.exe` supplied alongside those files is intentionally not committed. Release workflows build target-specific executables from the source.
+Run `screenshot --help` for the complete flag reference.
 
 ## Behavior
 
-The tool accepts a URL and either:
+By default, the tool inspects the URL response and chooses one of two actions:
 
-- renders HTML through Puppeteer and saves a screenshot, or
-- downloads a direct non-HTML/attachment response.
+- HTML content is rendered in Puppeteer and saved as a screenshot.
+- Direct non-HTML or attachment responses are downloaded as files.
 
-Automatic behavior can be overridden with `--force-screenshot` or `--force-download`.
+Use `--force-screenshot` or `--force-download` only when the automatic choice is wrong. They are mutually exclusive.
 
-Run:
+## Output
+
+Use `--output` or `-o` to select a file or directory.
+
+If the output is a directory:
+
+- screenshots default to `screenshot.png`
+- downloads use the source filename when one is available
+
+Screenshot format follows the output extension for JPEG and WebP. Other extensions default to PNG.
+
+## Screenshot options
 
 ```text
-screenshot --help
+--width, -w <px>
+--height, -h <px>
+--device-scale-factor <n>
+--fullpage
+--fullpage-max-height <px>
+--wait <ms>
+--wait-until <event>
 ```
 
-for the tool's complete flag reference.
+Default viewport: `1280x720`  
+Default device scale factor: `1`  
+Default extra wait: `1000 ms`  
+Default navigation event: `domcontentloaded`
+
+Supported `--wait-until` values:
+
+```text
+load
+domcontentloaded
+networkidle0
+networkidle2
+```
 
 ## Browser requirement
 
-HTML capture requires a Chromium-family browser available to Puppeteer. `PUPPETEER_EXECUTABLE_PATH` may be used to select the executable explicitly.
+HTML capture requires a Chromium-family browser available to Puppeteer.
 
-Direct file/media downloads do not require HTML rendering.
+Set `PUPPETEER_EXECUTABLE_PATH` to choose the browser executable explicitly. Otherwise, Puppeteer's executable resolution is used.
+
+Direct downloads do not require browser rendering.
