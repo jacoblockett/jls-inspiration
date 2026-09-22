@@ -42,6 +42,31 @@ describe("history", () => {
     expect(getEntry(project, "https://cdn.example.net/b", "product")[0].artifacts).toHaveLength(1);
   });
 
+  test("records independent judgments for a specific captured artifact", () => {
+    const project = root();
+    const artifact = path.join(project, "visual.png");
+    writeFileSync(artifact, "visual-evidence");
+    touch(project, "https://example.com/reference", { track: "visual", stage: "captured", artifact });
+    touch(project, "https://example.com/reference", {
+      track: "visual",
+      stage: "accepted",
+      artifact,
+      note: "Hierarchy is visible",
+    });
+    touch(project, "https://example.com/reference", {
+      track: "visual",
+      stage: "rejected",
+      actor: "auditor",
+      artifact,
+      note: "Claim overstates what is shown",
+    });
+    const [entry] = getEntry(project, "https://example.com/reference", "visual");
+    expect(entry.researcher_verdict).toBeNull();
+    expect(entry.auditor_verdict).toBeNull();
+    expect(entry.artifacts[0].researcher_verdict).toBe("accepted");
+    expect(entry.artifacts[0].auditor_verdict).toBe("rejected");
+  });
+
   test("records artifact hashes and independent researcher/auditor judgments", () => {
     const project = root();
     const artifact = path.join(project, "evidence.png");
