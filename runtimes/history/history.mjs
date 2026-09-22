@@ -402,18 +402,124 @@ export function searchEntries(root, query = "", { track, verdict, domain, limit 
   }
 }
 
-export function historyHelp(command = "history") {
-  return `Usage:
+export function historyHelp(command = "history", subcommand) {
+  const general = `History tracks Inspiration research sources and captured artifacts in .inspiration/research.db.
+
+Usage:
+  ${command} <command> [options]
+  ${command} help [command]
+
+Commands:
+  init    Initialize history storage for a project.
+  get     Check an exact URL and show exact, route-family, and same-domain history.
+  write   Record research activity or a researcher/auditor judgment.
+  search  Search or filter recorded history; search text is optional.
+
+Run "${command} help <command>" or "${command} <command> --help" for command details.`;
+
+  const details = {
+    init: `Usage:
   ${command} init [--path <project>]
+
+Creates .inspiration/project.json and .inspiration/research.db when needed.
+If --path is omitted, the current working directory is used.
+
+Options:
+  --path <project>   Project root containing .inspiration/.
+
+Example:
+  ${command} init --path /work/project`,
+
+    get: `Usage:
   ${command} get <url> [--track visual|product] [--path <project>]
-  ${command} write <url> --track visual|product --stage <stage> [--actor researcher|auditor] [--artifact <file>] [--note <text>] [--path <project>]
-  ${command} search [text] [--track visual|product] [--verdict accepted|rejected|pending] [--domain <domain>] [--limit <n>] [--path <project>]`;
+
+Looks up one URL without writing history.
+
+The result distinguishes:
+  exact_seen    The exact canonical URL has a stored record.
+  route_seen    Other stored URLs match the same obvious enumerated/resource route family.
+  domain_seen   Other stored URLs exist on the same site/domain.
+
+Related matches never count as exact visits. For example, /blog/page/1 can make
+/blog/page/2 a route-family match without claiming page 2 was visited.
+
+Options:
+  --track <track>    Restrict to visual or product research.
+  --path <project>   Project root containing .inspiration/.
+
+Example:
+  ${command} get https://example.com/blog/page/3 --track visual`,
+
+    write: `Usage:
+  ${command} write <url> --track visual|product --stage <stage> [options]
+
+Records research history for one URL.
+
+Stages:
+  discovered   Record that the source was found as a candidate.
+  visited      Record that the source was materially inspected.
+  captured     Register a saved artifact; requires --artifact.
+  inspected    Record that a source or registered artifact was inspected.
+  accepted     Record an accepted researcher/auditor judgment.
+  rejected     Record a rejected researcher/auditor judgment.
+
+Options:
+  --track <track>       Required: visual or product.
+  --stage <stage>       Required: one of the stages above.
+  --actor <actor>       researcher (default) or auditor.
+  --artifact <file>     Saved artifact for captured or artifact-level judgments.
+  --note <text>         Concise reason/context for a judgment.
+  --path <project>      Project root containing .inspiration/.
+
+Captured artifacts are SHA-256 hashed so duplicate evidence can be reported.
+
+Examples:
+  ${command} write https://example.com --track visual --stage visited
+  ${command} write https://example.com --track visual --stage captured --artifact .inspiration/assets/example.png
+  ${command} write https://example.com --track visual --stage rejected --actor auditor --artifact .inspiration/assets/example.png --note "Claim is not visible"`,
+
+    search: `Usage:
+  ${command} search [text] [--track visual|product] [--verdict accepted|rejected|pending] [--domain <domain>] [--limit <n>] [--path <project>]
+
+Searches recorded URLs, domains, notes, and artifact paths. Search text is optional:
+without text, filters alone return matching recent history, replacing the need for a separate list command.
+
+Options:
+  --track <track>       Restrict to visual or product research.
+  --verdict <verdict>   Restrict by auditor verdict: accepted, rejected, or pending.
+  --domain <domain>     Restrict to one normalized site/domain.
+  --limit <n>           Maximum results, default 100, maximum 5000.
+  --path <project>      Project root containing .inspiration/.
+
+Examples:
+  ${command} search "navigation hierarchy" --track visual
+  ${command} search --domain duolingo.com --limit 20
+  ${command} search --verdict pending --track product`,
+  };
+
+  if (!subcommand) return general;
+  const detail = details[subcommand];
+  if (!detail) throw new Error(`Unknown history command: ${subcommand}`);
+  return detail;
 }
 
 export async function historyMain(argv = process.argv.slice(2), command = "history") {
   const [subcommand, ...rest] = argv;
-  if (!subcommand || subcommand === "--help" || subcommand === "help") {
+
+  if (!subcommand || subcommand === "--help") {
     console.log(historyHelp(command));
+    return;
+  }
+
+  if (subcommand === "help") {
+    if (rest.length > 1) throw new Error(`Usage: ${command} help [command]`);
+    console.log(historyHelp(command, rest[0]));
+    return;
+  }
+
+  if (rest.includes("--help")) {
+    if (rest.length !== 1) throw new Error(`--help cannot be combined with other arguments`);
+    console.log(historyHelp(command, subcommand));
     return;
   }
 
