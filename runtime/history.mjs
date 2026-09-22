@@ -244,9 +244,10 @@ export function touch(root, urlValue, { track, stage, actor = "researcher", arti
   const { db } = openHistory(root);
   try {
     const canonical = canonicalizeUrl(urlValue);
-    const row = upsertSource(db, track, urlValue, canonical);
 
     if (artifact && ["inspected", "accepted", "rejected"].includes(stage)) {
+      const row = sourceRow(db, track, canonical);
+      if (!row) throw new Error(`Source is not registered for ${track}: ${canonical}`);
       const target = artifactRow(db, row.id, artifact);
       if (!target) throw new Error(`Artifact is not registered for this source: ${path.resolve(artifact)}`);
       updateJudgment(db, "artifacts", target.id, stage, actor, note);
@@ -256,18 +257,20 @@ export function touch(root, urlValue, { track, stage, actor = "researcher", arti
       };
     }
 
+    const row = upsertSource(db, track, urlValue, canonical);
     const stamp = now();
+    let attached = null;
     if (stage === "discovered") {
       db.query("UPDATE sources SET discovered_at = COALESCE(discovered_at, ?) WHERE id = ?").run(stamp, row.id);
     } else if (stage === "visited") {
       db.query("UPDATE sources SET visited_at = ? WHERE id = ?").run(stamp, row.id);
     } else if (stage === "captured") {
+      attached = attachArtifact(db, row.id, artifact);
       db.query("UPDATE sources SET captured_at = ? WHERE id = ?").run(stamp, row.id);
     } else {
       updateJudgment(db, "sources", row.id, stage, actor, note);
     }
 
-    const attached = stage === "captured" ? attachArtifact(db, row.id, artifact) : null;
     return { source: sourceRow(db, track, canonical), artifact: attached };
   } finally {
     db.close();
