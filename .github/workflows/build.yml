@@ -82,14 +82,14 @@ jobs:
           fi
 
           all_matrix="$(jq -nc '{include:[
-            {target:"windows-x64",runner:"windows-2025",bun_target:"bun-windows-x64-baseline",executable:"inspiration.exe",musl:false},
-            {target:"windows-arm64",runner:"windows-11-vs2026-arm",bun_target:"bun-windows-arm64",executable:"inspiration.exe",musl:false},
-            {target:"macos-x64",runner:"macos-15-intel",bun_target:"bun-darwin-x64-baseline",executable:"inspiration",musl:false},
-            {target:"macos-arm64",runner:"macos-15",bun_target:"bun-darwin-arm64",executable:"inspiration",musl:false},
-            {target:"linux-x64-gnu",runner:"ubuntu-24.04",bun_target:"bun-linux-x64-baseline",executable:"inspiration",musl:false},
-            {target:"linux-arm64-gnu",runner:"ubuntu-24.04-arm",bun_target:"bun-linux-arm64",executable:"inspiration",musl:false},
-            {target:"linux-x64-musl",runner:"ubuntu-24.04",bun_target:"bun-linux-x64-musl",executable:"inspiration",musl:true},
-            {target:"linux-arm64-musl",runner:"ubuntu-24.04-arm",bun_target:"bun-linux-arm64-musl",executable:"inspiration",musl:true}
+            {target:"windows-x64",runner:"windows-2025",bun_target:"bun-windows-x64-baseline",history:"history.exe",screenshot:"screenshot.exe",musl:false},
+            {target:"windows-arm64",runner:"windows-11-vs2026-arm",bun_target:"bun-windows-arm64",history:"history.exe",screenshot:"screenshot.exe",musl:false},
+            {target:"macos-x64",runner:"macos-15-intel",bun_target:"bun-darwin-x64-baseline",history:"history",screenshot:"screenshot",musl:false},
+            {target:"macos-arm64",runner:"macos-15",bun_target:"bun-darwin-arm64",history:"history",screenshot:"screenshot",musl:false},
+            {target:"linux-x64-gnu",runner:"ubuntu-24.04",bun_target:"bun-linux-x64-baseline",history:"history",screenshot:"screenshot",musl:false},
+            {target:"linux-arm64-gnu",runner:"ubuntu-24.04-arm",bun_target:"bun-linux-arm64",history:"history",screenshot:"screenshot",musl:false},
+            {target:"linux-x64-musl",runner:"ubuntu-24.04",bun_target:"bun-linux-x64-musl",history:"history",screenshot:"screenshot",musl:true},
+            {target:"linux-arm64-musl",runner:"ubuntu-24.04-arm",bun_target:"bun-linux-arm64-musl",history:"history",screenshot:"screenshot",musl:true}
           ]}')"
           matrix="$all_matrix"
 
@@ -100,7 +100,7 @@ jobs:
             force='${{ github.event_name == 'workflow_dispatch' && inputs.force || false }}'
             git fetch origin --tags --force
             if [[ "$force" != true ]] && git rev-parse -q --verify refs/tags/nightly >/dev/null; then
-              mapfile -t files < <(git diff --name-only nightly..HEAD -- .github/workflows/build.yml .github/workflows/version-check.yml manifest.json SKILL.md AGENTS.md tools agents)
+              mapfile -t files < <(git diff --name-only nightly..HEAD -- .github/workflows/build.yml .github/workflows/version-check.yml manifest.json SKILL.md AGENTS.md runtimes agents)
               if (( ${#files[@]} == 0 )); then should_build=false; fi
             fi
             release_tag=nightly
@@ -165,45 +165,43 @@ jobs:
         env:
           PUPPETEER_SKIP_DOWNLOAD: 'true'
         run: |
-          cd tools
+          cd runtimes/screenshot
           bun install
 
-      - name: Run runtime regressions
+      - name: Run history regressions
         if: matrix.target == 'linux-x64-gnu'
         shell: bash
-        run: bun test runtime/history.test.mjs runtime/inspiration.test.mjs
+        run: bun test runtimes/history/history.test.mjs
 
-      - name: Build Inspiration runtime and screenshot arm
+      - name: Build history and screenshot runtimes
         shell: bash
         run: |
           mkdir -p build
-          bun build runtime/inspiration.mjs \
+          bun build runtimes/history/history.mjs \
             --compile \
             --minify \
             --target '${{ matrix.bun_target }}' \
-            --outfile 'build/${{ matrix.executable }}'
-          screenshot='screenshot'
-          if [[ '${{ matrix.target }}' == windows-* ]]; then screenshot='screenshot.exe'; fi
-          bun build tools/screenshot.mjs \
+            --outfile 'build/${{ matrix.history }}'
+          bun build runtimes/screenshot/screenshot.mjs \
             --compile \
             --minify \
             --external typescript \
             --target '${{ matrix.bun_target }}' \
-            --outfile "build/$screenshot"
+            --outfile 'build/${{ matrix.screenshot }}'
 
       - name: Launch target runtimes
         if: matrix.musl == false
         shell: bash
         run: |
-          './build/${{ matrix.executable }}' --help >/dev/null
-          './build/${{ matrix.executable }}' capture --help >/dev/null
+          './build/${{ matrix.history }}' --help >/dev/null
+          './build/${{ matrix.screenshot }}' --help >/dev/null
 
       - name: Launch musl runtimes in Alpine
         if: matrix.musl == true
         shell: bash
         run: |
           set -euo pipefail
-          docker run --rm --user root --entrypoint sh -v "$PWD:/work" -w /work oven/bun:1.4.0-alpine -lc "./build/${{ matrix.executable }} --help >/dev/null && ./build/${{ matrix.executable }} capture --help >/dev/null"
+          docker run --rm --user root --entrypoint sh -v "$PWD:/work" -w /work oven/bun:1.4.0-alpine -lc "./build/${{ matrix.history }} --help >/dev/null && ./build/${{ matrix.screenshot }} --help >/dev/null"
 
       - name: Upload target runtimes
         uses: actions/upload-artifact@v4
@@ -212,8 +210,8 @@ jobs:
           if-no-files-found: error
           retention-days: 14
           path: |
-            build/${{ matrix.executable }}
-            build/screenshot*
+            build/${{ matrix.history }}
+            build/${{ matrix.screenshot }}
 
   aggregate:
     needs: [prepare, build]
@@ -237,7 +235,7 @@ jobs:
           set -euo pipefail
 
           targets=(windows-x64 windows-arm64 macos-x64 macos-arm64 linux-x64-gnu linux-arm64-gnu linux-x64-musl linux-arm64-musl)
-          executables=(inspiration.exe inspiration.exe inspiration inspiration inspiration inspiration inspiration inspiration)
+          histories=(history.exe history.exe history history history history history history)
           screenshots=(screenshot.exe screenshot.exe screenshot screenshot screenshot screenshot screenshot screenshot)
 
           version="$(jq -er '.version' manifest.json)"
@@ -245,9 +243,6 @@ jobs:
           [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
           [[ "$min_installer" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
           [[ "$(jq -r '.name' manifest.json)" == inspiration ]]
-          [[ "$(jq -r '.runtime' manifest.json)" == executable ]]
-          [[ "$(jq -r '.runtime_cli' manifest.json)" == inspiration ]]
-          [[ "$(jq -r '.cli_token' manifest.json)" == INSPIRATION_CLI ]]
 
           while IFS= read -r path; do test -f "$path"; done < <(
             jq -r '[.skill_files[], .instruction_fragment, (.harness_resources | to_entries[] | .value | to_entries[] | .value[])] | .[]' manifest.json
@@ -268,30 +263,24 @@ jobs:
 
           for i in "${!targets[@]}"; do
             target="${targets[$i]}"
-            executable="${executables[$i]}"
+            history="${histories[$i]}"
             screenshot="${screenshots[$i]}"
-            runtime_path="$(jq -er --arg target "$target" '.runtime_artifacts[$target]' manifest.json)"
-            support_path="bin/$screenshot"
-            source="build/targets/target-$target/$executable"
+            history_source="build/targets/target-$target/$history"
             screenshot_source="build/targets/target-$target/$screenshot"
             archive="$PWD/build/release/inspiration-$target.zip"
             stage="$PWD/build/.package-$target"
 
-            test -f "$source"
+            test -f "$history_source"
             test -f "$screenshot_source"
             rm -rf "$stage"
-            mkdir -p "$stage/$(dirname "$runtime_path")" "$stage/bin"
-            cp SKILL.md AGENTS.md LICENSE "$stage/"
+            mkdir -p "$stage/bin"
+            cp SKILL.md AGENTS.md LICENSE manifest.json "$stage/"
             cp -R agents "$stage/agents"
-            cp "$source" "$stage/$runtime_path"
-            cp "$screenshot_source" "$stage/$support_path"
+            cp "$history_source" "$stage/bin/$history"
+            cp "$screenshot_source" "$stage/bin/$screenshot"
             if [[ "$target" != windows-* ]]; then
-              chmod +x "$stage/$runtime_path" "$stage/$support_path"
+              chmod +x "$stage/bin/$history" "$stage/bin/$screenshot"
             fi
-
-            jq --arg target "$target" --arg runtime_path "$runtime_path" --arg support_path "$support_path" \
-              '.runtime_artifacts = {($target): $runtime_path} | .runtime_files = [$support_path]' \
-              manifest.json > "$stage/manifest.json"
 
             (cd "$stage" && zip -q -r "$archive" .)
             rm -rf "$stage"
