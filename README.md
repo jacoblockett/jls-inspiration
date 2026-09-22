@@ -6,9 +6,9 @@ Inspiration supports OpenAI Codex and Claude Code.
 
 ## Install
 
-The recommended way to install Inspiration is with [JLS](https://github.com/jacoblockett/jls), which manages installation, updates, runtime placement, and removal.
+The recommended way to install Inspiration is with [JLS](https://github.com/jacoblockett/jls), which manages installation, updates, and removal.
 
-Standalone target packages are available from [Releases](https://github.com/jacoblockett/jls-inspiration/releases).
+Standalone release packages are available from [Releases](https://github.com/jacoblockett/jls-inspiration/releases).
 
 ## Documentation
 
