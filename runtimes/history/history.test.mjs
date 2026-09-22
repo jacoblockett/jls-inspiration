@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { Database } from "bun:sqlite";
-import { canonicalizeUrl, getEntry, initialize, listEntries, openHistory, searchEntries, seen, touch } from "./history.mjs";
+import { canonicalizeUrl, getEntry, historyHelp, initialize, listEntries, openHistory, searchEntries, seen, touch } from "./history.mjs";
 
 const roots = [];
 function root() {
@@ -18,6 +18,13 @@ afterEach(() => {
 });
 
 describe("history", () => {
+  test("uses the plain history CLI name", () => {
+    const help = historyHelp();
+    expect(help).toContain("history init");
+    expect(help).toContain("history seen");
+    expect(help).not.toContain("inspiration history");
+  });
+
   test("canonicalizes common tracking noise without deleting functional query parameters", () => {
     expect(canonicalizeUrl("HTTPS://Example.com/path/?b=2&utm_source=x&a=1#frag"))
       .toBe("https://example.com/path?b=2&a=1");
