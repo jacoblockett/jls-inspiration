@@ -55,6 +55,7 @@ jobs:
       should_build: ${{ steps.mode.outputs.should_build }}
       release_tag: ${{ steps.mode.outputs.release_tag }}
       matrix: ${{ steps.mode.outputs.matrix }}
+      aggregate_build: ${{ steps.mode.outputs.aggregate_build }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -93,6 +94,7 @@ jobs:
           matrix="$all_matrix"
 
           should_build=true
+          aggregate_build=false
           release_tag=dev
           if [[ "$mode" == nightly ]]; then
             force='${{ github.event_name == 'workflow_dispatch' && inputs.force || false }}'
@@ -120,7 +122,9 @@ jobs:
             fi
           elif [[ "$mode" == build ]]; then
             requested_target='${{ inputs.target }}'
-            if [[ "$requested_target" != all ]]; then
+            if [[ "$requested_target" == all ]]; then
+              aggregate_build=true
+            else
               matrix="$(jq -c --arg target "$requested_target" '{include: [.include[] | select(.target == $target)]}' <<< "$all_matrix")"
               if [[ "$(jq '.include | length' <<< "$matrix")" -ne 1 ]]; then
                 echo "Unknown build target: $requested_target" >&2
@@ -136,6 +140,7 @@ jobs:
           echo "should_build=$should_build" >> "$GITHUB_OUTPUT"
           echo "release_tag=$release_tag" >> "$GITHUB_OUTPUT"
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+          echo "aggregate_build=$aggregate_build" >> "$GITHUB_OUTPUT"
 
       - name: No release build
         if: steps.mode.outputs.should_build != 'true'
@@ -155,57 +160,66 @@ jobs:
         with:
           bun-version: 1.4.0
 
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 12.5.1
-          run_install: false
-
-      - name: Install tool dependencies
+      - name: Install screenshot build dependency
         shell: bash
         env:
           PUPPETEER_SKIP_DOWNLOAD: 'true'
-        run: pnpm --dir tools install --frozen-lockfile
+        run: |
+          cd tools
+          bun install
 
       - name: Run runtime regressions
         if: matrix.target == 'linux-x64-gnu'
         shell: bash
-        run: bun test tools/history.test.mjs tools/screenshot.test.mjs
+        run: bun test runtime/history.test.mjs runtime/inspiration.test.mjs
 
-      - name: Build Inspiration runtime
+      - name: Build Inspiration runtime and screenshot arm
         shell: bash
         run: |
           mkdir -p build
-          bun build tools/inspiration.mjs \
+          bun build runtime/inspiration.mjs \
+            --compile \
+            --minify \
+            --target '${{ matrix.bun_target }}' \
+            --outfile 'build/${{ matrix.executable }}'
+          screenshot='screenshot'
+          if [[ '${{ matrix.target }}' == windows-* ]]; then screenshot='screenshot.exe'; fi
+          bun build tools/screenshot.mjs \
             --compile \
             --minify \
             --external typescript \
             --target '${{ matrix.bun_target }}' \
-            --outfile 'build/${{ matrix.executable }}'
+            --outfile "build/$screenshot"
 
-      - name: Launch Inspiration runtime
+      - name: Launch target runtimes
         if: matrix.musl == false
         shell: bash
         run: |
           './build/${{ matrix.executable }}' --help >/dev/null
+          screenshot='screenshot'
+          if [[ '${{ matrix.target }}' == windows-* ]]; then screenshot='screenshot.exe'; fi
+          "./build/$screenshot" --help >/dev/null
 
-      - name: Launch musl runtime in Alpine
+      - name: Launch musl runtimes in Alpine
         if: matrix.musl == true
         shell: bash
         run: |
           set -euo pipefail
-          docker run --rm --user root --entrypoint sh -v "$PWD:/work" -w /work oven/bun:1.4.0-alpine -lc "./build/${{ matrix.executable }} --help >/dev/null"
+          docker run --rm --user root --entrypoint sh -v "$PWD:/work" -w /work oven/bun:1.4.0-alpine -lc "./build/${{ matrix.executable }} --help >/dev/null && ./build/screenshot --help >/dev/null"
 
-      - name: Upload target runtime
+      - name: Upload target runtimes
         uses: actions/upload-artifact@v4
         with:
           name: target-${{ matrix.target }}
           if-no-files-found: error
           retention-days: 14
-          path: build/${{ matrix.executable }}
+          path: |
+            build/${{ matrix.executable }}
+            build/screenshot*
 
   aggregate:
     needs: [prepare, build]
-    if: needs.prepare.outputs.should_build == 'true' && needs.prepare.outputs.mode != 'build'
+    if: needs.prepare.outputs.should_build == 'true' && (needs.prepare.outputs.mode != 'build' || needs.prepare.outputs.aggregate_build == 'true')
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -226,6 +240,7 @@ jobs:
 
           targets=(windows-x64 windows-arm64 macos-x64 macos-arm64 linux-x64-gnu linux-arm64-gnu linux-x64-musl linux-arm64-musl)
           executables=(inspiration.exe inspiration.exe inspiration inspiration inspiration inspiration inspiration inspiration)
+          screenshots=(screenshot.exe screenshot.exe screenshot screenshot screenshot screenshot screenshot screenshot)
 
           version="$(jq -er '.version' manifest.json)"
           min_installer="$(jq -er '.min_installer' manifest.json)"
@@ -256,21 +271,28 @@ jobs:
           for i in "${!targets[@]}"; do
             target="${targets[$i]}"
             executable="${executables[$i]}"
+            screenshot="${screenshots[$i]}"
             runtime_path="$(jq -er --arg target "$target" '.runtime_artifacts[$target]' manifest.json)"
+            support_path="bin/$screenshot"
             source="build/targets/target-$target/$executable"
+            screenshot_source="build/targets/target-$target/$screenshot"
             archive="$PWD/build/release/inspiration-$target.zip"
             stage="$PWD/build/.package-$target"
 
             test -f "$source"
+            test -f "$screenshot_source"
             rm -rf "$stage"
-            mkdir -p "$stage/$(dirname "$runtime_path")"
+            mkdir -p "$stage/$(dirname "$runtime_path")" "$stage/bin"
             cp SKILL.md AGENTS.md LICENSE "$stage/"
             cp -R agents "$stage/agents"
             cp "$source" "$stage/$runtime_path"
-            if [[ "$target" != windows-* ]]; then chmod +x "$stage/$runtime_path"; fi
+            cp "$screenshot_source" "$stage/$support_path"
+            if [[ "$target" != windows-* ]]; then
+              chmod +x "$stage/$runtime_path" "$stage/$support_path"
+            fi
 
-            jq --arg target "$target" --arg runtime_path "$runtime_path" \
-              '.runtime_artifacts = {($target): $runtime_path}' \
+            jq --arg target "$target" --arg runtime_path "$runtime_path" --arg support_path "$support_path" \
+              '.runtime_artifacts = {($target): $runtime_path} | .runtime_files = [$support_path]' \
               manifest.json > "$stage/manifest.json"
 
             (cd "$stage" && zip -q -r "$archive" .)
