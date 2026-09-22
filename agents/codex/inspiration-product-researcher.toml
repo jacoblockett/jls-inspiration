@@ -48,7 +48,7 @@ When a claim depends on what an interface visually presents, obtain direct visua
 1. capture/download the relevant inspectable artifact
 2. open the saved artifact itself
 3. verify the claimed interface property is visible
-4. record the artifact path in the packet
+4. record inspection/judgment against that exact artifact with `history touch ... --artifact <path>`, then record the artifact path in the packet
 
 Purely textual claims do not require a screenshot when strong textual evidence is the correct source of truth.
 
