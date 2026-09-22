@@ -37,6 +37,13 @@ describe("history", () => {
     expect(help).not.toContain("history list");
   });
 
+  test("provides detailed help for every command", () => {
+    expect(historyHelp("history", "init")).toContain("Creates .inspiration/project.json");
+    expect(historyHelp("history", "get")).toContain("exact_seen");
+    expect(historyHelp("history", "write")).toContain("Stages:");
+    expect(historyHelp("history", "search")).toContain("Search text is optional");
+  });
+
   test("init creates only history-owned state", () => {
     const project = root();
     const state = path.join(project, ".inspiration");
