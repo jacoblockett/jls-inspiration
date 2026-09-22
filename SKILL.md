@@ -24,7 +24,7 @@ Each track has its own researcher and independent auditor. Raw project ideation 
 6. Researchers search broadly but select narrowly. Breadth is a discovery strategy, never a category quota.
 7. Established working products receive the strongest weight in product/UX conclusions. Emerging, amateur, and experimental work may contribute promising hypotheses but is not treated as validated merely because it is novel.
 8. "Product X does this" is not equivalent to "this works." Preserve the evidence level of every product/UX claim.
-9. Researchers query durable history before revisiting a URL. Record meaningful discovery/visit/capture/inspection/judgment events through the runtime CLI.
+9. Researchers query durable history globally before revisiting a URL so prior work in either track is visible. Every materially inspected source is logged for the active track, and captured artifact hashes are used to flag duplicate evidence.
 10. Auditors independently inspect accepted evidence and may reject, request replacement, or identify research gaps. They do not merely critique prose.
 11. Repair loops preserve valid accepted work. Do not restart broad research because one subset failed review.
 12. If the same material deficiency makes no progress across three distinct repair strategies, stop as stalled instead of looping indefinitely.
