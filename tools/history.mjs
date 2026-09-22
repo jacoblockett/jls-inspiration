@@ -112,6 +112,12 @@ export function openHistory(root, create = false) {
       sha256 TEXT NOT NULL,
       media_type TEXT,
       created_at TEXT NOT NULL,
+      researcher_inspected_at TEXT,
+      researcher_verdict TEXT CHECK(researcher_verdict IN ('accepted','rejected') OR researcher_verdict IS NULL),
+      researcher_note TEXT,
+      auditor_inspected_at TEXT,
+      auditor_verdict TEXT CHECK(auditor_verdict IN ('accepted','rejected') OR auditor_verdict IS NULL),
+      auditor_note TEXT,
       UNIQUE(source_id, sha256)
     );
     CREATE INDEX IF NOT EXISTS sources_domain_idx ON sources(domain);
@@ -174,10 +180,30 @@ function attachArtifact(db, sourceId, file) {
     ON CONFLICT(source_id, sha256) DO UPDATE SET path = excluded.path
   `).run(sourceId, resolved, sha, mediaType(resolved), now());
   return {
-    path: resolved,
-    sha256: sha,
+    ...db.query("SELECT * FROM artifacts WHERE source_id = ? AND sha256 = ?").get(sourceId, sha),
     duplicate_of: duplicate ?? null,
   };
+}
+
+function artifactRow(db, sourceId, file) {
+  const resolved = path.resolve(file);
+  return db.query("SELECT * FROM artifacts WHERE source_id = ? AND path = ?").get(sourceId, resolved);
+}
+
+function updateJudgment(db, table, id, stage, actor, note) {
+  const stamp = now();
+  const prefix = actor === "auditor" ? "auditor" : "researcher";
+  if (stage === "inspected") {
+    db.query(`UPDATE ${table} SET ${prefix}_inspected_at = ? WHERE id = ?`).run(stamp, id);
+  } else {
+    db.query(`
+      UPDATE ${table}
+      SET ${prefix}_inspected_at = COALESCE(${prefix}_inspected_at, ?),
+          ${prefix}_verdict = ?,
+          ${prefix}_note = ?
+      WHERE id = ?
+    `).run(stamp, stage, note ?? null, id);
+  }
 }
 
 export function touch(root, urlValue, { track, stage, actor = "researcher", artifact, note } = {}) {
@@ -188,32 +214,37 @@ export function touch(root, urlValue, { track, stage, actor = "researcher", arti
     throw new Error("auditor stage must be inspected, accepted, or rejected");
   }
   if (stage === "captured" && !artifact) throw new Error("captured stage requires --artifact");
+  if (artifact && ["discovered", "visited"].includes(stage)) {
+    throw new Error(`${stage} is source-level and does not accept --artifact`);
+  }
 
   const { db } = openHistory(root);
   try {
     const canonical = canonicalizeUrl(urlValue);
     const row = upsertSource(db, track, urlValue, canonical);
-    const stamp = now();
-    const updates = [];
-    const params = [];
 
-    if (stage === "discovered") updates.push("discovered_at = COALESCE(discovered_at, ?)");
-    else if (stage === "visited") updates.push("visited_at = ?");
-    else if (stage === "captured") updates.push("captured_at = ?");
-    else if (stage === "inspected") updates.push(actor === "auditor" ? "auditor_inspected_at = ?" : "researcher_inspected_at = ?");
-    else if (["accepted", "rejected"].includes(stage)) {
-      if (actor === "auditor") {
-        updates.push("auditor_inspected_at = COALESCE(auditor_inspected_at, ?)", "auditor_verdict = ?", "auditor_note = ?");
-        params.push(stamp, stage, note ?? null);
-      } else {
-        updates.push("researcher_inspected_at = COALESCE(researcher_inspected_at, ?)", "researcher_verdict = ?", "researcher_note = ?");
-        params.push(stamp, stage, note ?? null);
-      }
+    if (artifact && ["inspected", "accepted", "rejected"].includes(stage)) {
+      const target = artifactRow(db, row.id, artifact);
+      if (!target) throw new Error(`Artifact is not registered for this source: ${path.resolve(artifact)}`);
+      updateJudgment(db, "artifacts", target.id, stage, actor, note);
+      return {
+        source: sourceRow(db, track, canonical),
+        artifact: artifactRow(db, row.id, artifact),
+      };
     }
 
-    if (!["accepted", "rejected"].includes(stage)) params.push(stamp);
-    db.query(`UPDATE sources SET ${updates.join(", ")} WHERE id = ?`).run(...params, row.id);
-    const attached = artifact ? attachArtifact(db, row.id, artifact) : null;
+    const stamp = now();
+    if (stage === "discovered") {
+      db.query("UPDATE sources SET discovered_at = COALESCE(discovered_at, ?) WHERE id = ?").run(stamp, row.id);
+    } else if (stage === "visited") {
+      db.query("UPDATE sources SET visited_at = ? WHERE id = ?").run(stamp, row.id);
+    } else if (stage === "captured") {
+      db.query("UPDATE sources SET captured_at = ? WHERE id = ?").run(stamp, row.id);
+    } else {
+      updateJudgment(db, "sources", row.id, stage, actor, note);
+    }
+
+    const attached = stage === "captured" ? attachArtifact(db, row.id, artifact) : null;
     return { source: sourceRow(db, track, canonical), artifact: attached };
   } finally {
     db.close();
@@ -245,7 +276,7 @@ export function getEntry(root, urlValue, track) {
       : db.query("SELECT * FROM sources WHERE canonical_url = ? ORDER BY track").all(canonical);
     return rows.map((row) => ({
       ...row,
-      artifacts: db.query("SELECT path, sha256, media_type, created_at FROM artifacts WHERE source_id = ? ORDER BY id").all(row.id),
+      artifacts: db.query("SELECT * FROM artifacts WHERE source_id = ? ORDER BY id").all(row.id),
     }));
   } finally {
     db.close();
