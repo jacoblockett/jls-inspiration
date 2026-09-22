@@ -29,6 +29,19 @@ describe("history", () => {
     expect(seen(project, "https://example.com/a", "product").seen).toBe(false);
   });
 
+  test("reports cross-source duplicate artifact hashes without collapsing source history", () => {
+    const project = root();
+    const first = path.join(project, "first.png");
+    const second = path.join(project, "second.png");
+    writeFileSync(first, "same-image");
+    writeFileSync(second, "same-image");
+    touch(project, "https://example.com/a", { track: "visual", stage: "captured", artifact: first });
+    const duplicate = touch(project, "https://cdn.example.net/b", { track: "product", stage: "captured", artifact: second });
+    expect(duplicate.artifact.duplicate_of.canonical_url).toBe("https://example.com/a");
+    expect(getEntry(project, "https://example.com/a", "visual")[0].artifacts).toHaveLength(1);
+    expect(getEntry(project, "https://cdn.example.net/b", "product")[0].artifacts).toHaveLength(1);
+  });
+
   test("records artifact hashes and independent researcher/auditor judgments", () => {
     const project = root();
     const artifact = path.join(project, "evidence.png");
