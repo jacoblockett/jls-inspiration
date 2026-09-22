@@ -1,4 +1,4 @@
 build/
-tools/node_modules/
+screenshot/node_modules/
 .inspiration/
-tools/bun.lock
+screenshot/bun.lock

@@ -1,8 +1,8 @@
-# History
+# History Runtime
 
 `history` is the SQLite interface used to persist Inspiration research history.
 
-It is independent from the screenshot runtime. Its source lives under `runtimes/history/`, and target builds produce `bin/history` or `bin/history.exe`.
+It is independent from the screenshot tool. Its source lives under `history/`, and target builds produce `bin/history` or `bin/history.exe`.
 
 ## Project state
 

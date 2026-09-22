@@ -100,7 +100,7 @@ jobs:
             force='${{ github.event_name == 'workflow_dispatch' && inputs.force || false }}'
             git fetch origin --tags --force
             if [[ "$force" != true ]] && git rev-parse -q --verify refs/tags/nightly >/dev/null; then
-              mapfile -t files < <(git diff --name-only nightly..HEAD -- .github/workflows/build.yml .github/workflows/version-check.yml manifest.json SKILL.md AGENTS.md runtimes agents)
+              mapfile -t files < <(git diff --name-only nightly..HEAD -- .github/workflows/build.yml .github/workflows/version-check.yml manifest.json SKILL.md AGENTS.md history screenshot agents)
               if (( ${#files[@]} == 0 )); then should_build=false; fi
             fi
             release_tag=nightly
@@ -169,44 +169,44 @@ jobs:
         shell: bash
         env:
           PUPPETEER_SKIP_DOWNLOAD: 'true'
-        run: pnpm --dir runtimes/screenshot install --frozen-lockfile
+        run: pnpm --dir screenshot install --frozen-lockfile
 
       - name: Run history regressions
         if: matrix.target == 'linux-x64-gnu'
         shell: bash
-        run: bun test runtimes/history/history.test.mjs
+        run: bun test history/history.test.mjs
 
-      - name: Build history and screenshot runtimes
+      - name: Build history and screenshot executables
         shell: bash
         run: |
           mkdir -p build
-          bun build runtimes/history/history.mjs \
+          bun build history/history.mjs \
             --compile \
             --minify \
             --target '${{ matrix.bun_target }}' \
             --outfile 'build/${{ matrix.history }}'
-          bun build runtimes/screenshot/screenshot.mjs \
+          bun build screenshot/screenshot.mjs \
             --compile \
             --minify \
             --external typescript \
             --target '${{ matrix.bun_target }}' \
             --outfile 'build/${{ matrix.screenshot }}'
 
-      - name: Launch target runtimes
+      - name: Launch target executables
         if: matrix.musl == false
         shell: bash
         run: |
           './build/${{ matrix.history }}' --help >/dev/null
           './build/${{ matrix.screenshot }}' --help >/dev/null
 
-      - name: Launch musl runtimes in Alpine
+      - name: Launch musl executables in Alpine
         if: matrix.musl == true
         shell: bash
         run: |
           set -euo pipefail
           docker run --rm --user root --entrypoint sh -v "$PWD:/work" -w /work oven/bun:1.4.0-alpine -lc "./build/${{ matrix.history }} --help >/dev/null && ./build/${{ matrix.screenshot }} --help >/dev/null"
 
-      - name: Upload target runtimes
+      - name: Upload target executables
         uses: actions/upload-artifact@v4
         with:
           name: target-${{ matrix.target }}
@@ -223,7 +223,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download all target runtimes
+      - name: Download all target executables
         uses: actions/download-artifact@v4
         with:
           pattern: target-*

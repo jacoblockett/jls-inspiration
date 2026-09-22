@@ -12,7 +12,8 @@ Standalone release packages are available from [Releases](https://github.com/jac
 
 ## Documentation
 
-- [History runtime](docs/history.md)\n- [Screenshot runtime](docs/screenshot.md)
+- [History Runtime](docs/history.md)
+- [Screenshot Tool](docs/screenshot.md)
 
 ## License
 

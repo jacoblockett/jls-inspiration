@@ -1,15 +1,15 @@
-# Screenshot
+# Screenshot Tool
 
-`screenshot` is the independent Puppeteer-based capture/download runtime supplied for Inspiration research.
+`screenshot` is the independent Puppeteer-based capture/download tool supplied for Inspiration research.
 
-Its source lives under `runtimes/screenshot/`. Target builds produce `bin/screenshot` or `bin/screenshot.exe`.
+Its source lives under `screenshot/`. Target builds produce `bin/screenshot` or `bin/screenshot.exe`.
 
 ## Source provenance
 
 The repository preserves the supplied unbuilt screenshot source files verbatim:
 
 ```text
-runtimes/screenshot/
+screenshot/
 ├── package.json
 ├── pnpm-lock.yaml
 ├── pnpm-workspace.yaml
@@ -20,7 +20,7 @@ The prebuilt `screenshot.exe` supplied alongside those files is intentionally no
 
 ## Behavior
 
-The runtime accepts a URL and either:
+The tool accepts a URL and either:
 
 - renders HTML through Puppeteer and saves a screenshot, or
 - downloads a direct non-HTML/attachment response.
@@ -33,7 +33,7 @@ Run:
 screenshot --help
 ```
 
-for the runtime's complete flag reference.
+for the tool's complete flag reference.
 
 ## Browser requirement
 
