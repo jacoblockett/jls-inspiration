@@ -24,11 +24,11 @@ Never use an incidental preference as a sourcing filter merely because it appear
 
 Before materially investigating a candidate URL, run:
 
-`{{INSPIRATION_CLI}} history seen <url> --track visual --path PROJECT_ROOT`
+`{{INSPIRATION_CLI}} history seen <url> --path PROJECT_ROOT`
 
-If already investigated, use the history result and do not casually revisit it. Revisit only when AUDIT_PATH requires a specific missing state/asset or the URL materially changed; record why.
+Check the global result first so prior work in the other research track is visible. If this URL was already investigated for the current track, do not casually revisit it. If it was investigated only for the other track, revisit only when the current visual question materially requires different evidence; record why.
 
-Record meaningful stages with `history touch`. Keep notes short.
+Every source whose page/content you materially inspect must receive a `visited` event for the current track. Record capture/inspection/judgment events as they occur. If a captured artifact is reported as a duplicate hash of prior evidence, treat that as a redundancy warning rather than silently retaining another copy. Keep notes short.
 
 ## Visual-evidence gate
 
