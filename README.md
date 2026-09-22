@@ -12,7 +12,7 @@ Standalone release packages are available from [Releases](https://github.com/jac
 
 ## Documentation
 
-- [Runtime and standalone installation](docs/runtime.md)
+- [History runtime](docs/history.md)\n- [Screenshot runtime](docs/screenshot.md)
 
 ## License
 
