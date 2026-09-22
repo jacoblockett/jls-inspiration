@@ -1,0 +1,16 @@
+{
+  "name": "jls-inspiration-tools",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.5.1",
+  "scripts": {
+    "screenshot": "bun screenshot.mjs",
+    "history": "bun history.mjs",
+    "inspiration": "bun inspiration.mjs",
+    "test": "bun test",
+    "build": "bun build inspiration.mjs --compile --minify --external typescript --outfile inspiration"
+  },
+  "dependencies": {
+    "puppeteer": "^24.20.0"
+  }
+}
