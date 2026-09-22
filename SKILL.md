@@ -93,7 +93,7 @@ The briefing specialist decides what is research-driving. For example, a project
 
 Use `.inspiration/work/visual-research.md` for the current visual packet, `.inspiration/work/visual-audit.md` for its audit, and `.inspiration/assets/visual/` for visual evidence.
 
-1. Spawn `inspiration-visual-researcher` in `INITIAL` mode with `PROJECT_ROOT`, `BRIEF_PATH`, `PACKET_PATH`, and the research goal.
+1. Spawn `inspiration-visual-researcher` in `INITIAL` mode with `PROJECT_ROOT`, `BRIEF_PATH`, and `PACKET_PATH`. Do not pass the raw user request or research goal downstream; BRIEF_PATH is the complete semantic input.
 2. The researcher must query history before materially investigating a candidate URL.
 3. Discovery/browser use may pre-screen candidates, but acceptance requires a captured artifact followed by explicit inspection of that saved artifact through the harness's local image-view capability.
 4. If a candidate looked promising but the captured artifact does not visibly support the claimed lesson, reject it and record why.
@@ -109,7 +109,7 @@ Visual saturation means additional sources are no longer contributing materially
 
 Use `.inspiration/work/product-research.md`, `.inspiration/work/product-audit.md`, and `.inspiration/assets/product/` for any captured product/interface evidence.
 
-1. Spawn `inspiration-product-researcher` in `INITIAL` mode with the approved brief, paths, and research goal.
+1. Spawn `inspiration-product-researcher` in `INITIAL` mode with `PROJECT_ROOT`, the approved `BRIEF_PATH`, and `PACKET_PATH`. Do not pass the raw user request or research goal downstream.
 2. Weight evidence in this order unless the specific question justifies otherwise:
    - established direct products with demonstrated real-world use
    - established analogous/cross-industry patterns
@@ -145,7 +145,7 @@ Avoid accumulating speculative assets. Discovery can be broad without downloadin
 
 After both auditors PASS:
 
-1. Spawn `inspiration-synthesizer` with `BRIEF_PATH`, both PASSed research packet paths, both audit paths, and `REPORT_PATH` (default `.inspiration/report.md` unless the user requested another path).
+1. Spawn `inspiration-synthesizer` with `BRIEF_PATH`, both PASSed research packet paths, both audit paths, and `REPORT_PATH` (default `.inspiration/report.md` unless the user requested another path). Do not pass raw ideation or the original research request.
 2. The synthesizer performs no browsing, capture, or new research.
 3. Verify the report exists and references only approved findings/artifacts.
 4. Return the report path and a concise summary to the user.
