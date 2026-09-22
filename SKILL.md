@@ -134,7 +134,7 @@ For every retained visual reference:
 2. capture/download the candidate
 3. open the saved artifact itself
 4. verify the claimed property is actually visible in that artifact
-5. record accepted/rejected judgment and concise reason in history
+5. record accepted/rejected judgment and concise reason in history against the exact artifact with `--artifact <path>`
 6. retain accepted evidence in the packet with source URL, artifact path, exact observation, `TAKE`, and `LEAVE`
 
 If no local image-inspection capability exists, visual research is blocked. Do not downgrade silently to metadata-only moodboarding.
