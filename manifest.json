@@ -1,0 +1,52 @@
+{
+  "name": "inspiration",
+  "version": "0.0.0",
+  "min_installer": "0.4.1",
+  "description": "Audited multi-source research for visual design and product/UX direction",
+  "skill_files": [
+    "SKILL.md"
+  ],
+  "harness_resources": {
+    "codex": {
+      "agents": [
+        "agents/codex/inspiration-brief.toml",
+        "agents/codex/inspiration-visual-researcher.toml",
+        "agents/codex/inspiration-visual-auditor.toml",
+        "agents/codex/inspiration-product-researcher.toml",
+        "agents/codex/inspiration-product-auditor.toml",
+        "agents/codex/inspiration-synthesizer.toml"
+      ]
+    },
+    "claude": {
+      "agents": [
+        "agents/claude/inspiration-brief.md",
+        "agents/claude/inspiration-visual-researcher.md",
+        "agents/claude/inspiration-visual-auditor.md",
+        "agents/claude/inspiration-product-researcher.md",
+        "agents/claude/inspiration-product-auditor.md",
+        "agents/claude/inspiration-synthesizer.md"
+      ]
+    }
+  },
+  "runtime": "executable",
+  "runtime_artifacts": {
+    "windows-x64": "runtime/windows-x64/inspiration.exe",
+    "windows-arm64": "runtime/windows-arm64/inspiration.exe",
+    "macos-x64": "runtime/macos-x64/inspiration",
+    "macos-arm64": "runtime/macos-arm64/inspiration",
+    "linux-x64-gnu": "runtime/linux-x64-gnu/inspiration",
+    "linux-arm64-gnu": "runtime/linux-arm64-gnu/inspiration",
+    "linux-x64-musl": "runtime/linux-x64-musl/inspiration",
+    "linux-arm64-musl": "runtime/linux-arm64-musl/inspiration"
+  },
+  "runtime_cli": "inspiration",
+  "cli_token": "INSPIRATION_CLI",
+  "instruction_fragment": "AGENTS.md",
+  "generated_data": [
+    {
+      "path": ".inspiration",
+      "marker": "project.json",
+      "description": "Inspiration research history, captured evidence, working packets, and synthesized report"
+    }
+  ]
+}
