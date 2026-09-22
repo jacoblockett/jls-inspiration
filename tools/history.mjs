@@ -160,12 +160,24 @@ function attachArtifact(db, sourceId, file) {
   const resolved = path.resolve(file);
   if (!existsSync(resolved)) throw new Error(`Artifact does not exist: ${resolved}`);
   const sha = sha256File(resolved);
+  const duplicate = db.query(`
+    SELECT a.path, a.sha256, s.track, s.canonical_url
+    FROM artifacts a
+    JOIN sources s ON s.id = a.source_id
+    WHERE a.sha256 = ? AND a.source_id != ?
+    ORDER BY a.id
+    LIMIT 1
+  `).get(sha, sourceId);
   db.query(`
     INSERT INTO artifacts(source_id, path, sha256, media_type, created_at)
     VALUES (?, ?, ?, ?, ?)
     ON CONFLICT(source_id, sha256) DO UPDATE SET path = excluded.path
   `).run(sourceId, resolved, sha, mediaType(resolved), now());
-  return { path: resolved, sha256: sha };
+  return {
+    path: resolved,
+    sha256: sha,
+    duplicate_of: duplicate ?? null,
+  };
 }
 
 export function touch(root, urlValue, { track, stage, actor = "researcher", artifact, note } = {}) {
