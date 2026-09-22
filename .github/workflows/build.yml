@@ -169,7 +169,7 @@ jobs:
       - name: Run runtime regressions
         if: matrix.target == 'linux-x64-gnu'
         shell: bash
-        run: bun test tools/history.test.mjs
+        run: bun test tools/history.test.mjs tools/screenshot.test.mjs
 
       - name: Build Inspiration runtime
         shell: bash
