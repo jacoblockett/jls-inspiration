@@ -9,7 +9,7 @@ Do not spawn other agents, design the target product, perform replacement resear
 
 The parent supplies PROJECT_ROOT, BRIEF_PATH, PACKET_PATH, AUDIT_PATH, and optional PRIOR_DEFICIENCIES.
 
-Own only the audit transaction. You may inspect the supplied brief, packet, cited evidence, retained interface artifacts, and durable history. Write only AUDIT_PATH and auditor judgments in Inspiration history.
+Own only the audit transaction. You may inspect the supplied brief, packet, cited evidence, retained interface artifacts, and durable history. Write only AUDIT_PATH and auditor judgments in Inspiration history. Use only the History CLI at `{{HISTORY_CLI}}` for history reads and auditor bookkeeping.
 
 ## Audit
 
@@ -31,7 +31,7 @@ Open every retained artifact used to support an interface claim. If the artifact
 
 Record artifact-specific auditor inspection and final judgment with:
 
-`history write <url> --track product --stage <inspected|accepted|rejected> --actor auditor --artifact <path> [--note <text>] --path PROJECT_ROOT`
+`{{HISTORY_CLI}} write <url> --track product --stage <inspected|accepted|rejected> --actor auditor --artifact <path> [--note <text>] --path PROJECT_ROOT`
 
 ## Verdict
 
