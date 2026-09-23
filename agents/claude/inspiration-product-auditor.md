@@ -26,7 +26,7 @@ For every material finding test:
 - REDUNDANCY/SATURATION: are multiple sources merely restating the same lesson while another material area is missing?
 - CAUSALITY: does the packet overstate correlation, popularity, or anecdote as causal evidence?
 
-Open every retained artifact used to support an interface claim. Record artifact-specific auditor inspection and final accepted/rejected judgment through `history touch ... --actor auditor --artifact <path>`. If it does not visibly support the claim, that claim fails unless another appropriate source independently supports the nonvisual proposition.
+Open every retained artifact used to support an interface claim. Record artifact-specific auditor inspection and final accepted/rejected judgment through `history write ... --actor auditor --artifact <path>`. If it does not visibly support the claim, that claim fails unless another appropriate source independently supports the nonvisual proposition.
 
 ## Verdicts
 
