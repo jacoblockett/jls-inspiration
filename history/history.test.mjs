@@ -28,13 +28,13 @@ afterEach(() => {
 describe("history", () => {
   test("exposes only the consolidated CLI surface", () => {
     const help = historyHelp();
-    expect(help).toContain("history init");
-    expect(help).toContain("history get");
-    expect(help).toContain("history write");
-    expect(help).toContain("history search");
-    expect(help).not.toContain("history seen");
-    expect(help).not.toContain("history touch");
-    expect(help).not.toContain("history list");
+    expect(help).toContain("  init    ");
+    expect(help).toContain("  get     ");
+    expect(help).toContain("  write   ");
+    expect(help).toContain("  search  ");
+    expect(help).not.toContain("  seen    ");
+    expect(help).not.toContain("  touch   ");
+    expect(help).not.toContain("  list    ");
   });
 
   test("provides detailed help for every command", () => {
