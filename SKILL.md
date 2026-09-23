@@ -5,26 +5,26 @@ description: Research visual design and product/UX direction through audited mul
 
 # Inspiration
 
-Inspiration coordinates audited visual and product/UX research. It does not perform the specialist research itself, design the target product, or implement the resulting guidance.
+Inspiration coordinates audited visual and product/UX research. It does not perform specialist research, design the target product, or implement the resulting guidance.
 
-Its job is to establish the research brief, run the required specialists, enforce review gates, and return the final approved report.
+Its job is to obtain an approved research brief, route work through the required specialists and review gates, and return the final approved report.
 
 ## Invariants
 
-1. The skill is the coordinator. Specialists never spawn specialists, and required specialists run serially.
-2. The specialist definition owns each specialist's semantic contract. Spawn prompts contain only dynamic paths, evidence, mode, and review deficiencies required for that transaction.
-3. Raw project ideation goes to the briefing specialist, not directly to downstream researchers or auditors. Downstream work is governed by the approved brief.
+1. The skill is the coordinator. Specialists never spawn specialists, and children run serially.
+2. The specialist definition owns each specialist's semantic contract. Spawn prompts contain only the dynamic paths, evidence, mode, and prior review information required for that transaction.
+3. Raw project ideation goes to the briefing specialist, not directly to downstream researchers or auditors. The approved brief is the semantic input to later stages.
 4. Use only user-supplied, explicitly authorized, or otherwise authoritative project context allowed by the active harness.
-5. Visual and product/UX research are separate transactions. Neither packet is approved until its matching auditor returns PASS.
-6. Reviewer findings are instructions to repair the current work, not reasons to restart valid research. Preserve accepted material and stable deficiency identity wherever possible.
-7. Do not weaken review criteria to end a repair loop. Surface a genuine external blocker when required authority, evidence, tooling, or inspection capability is unavailable.
+5. Visual and product/UX research are separate reviewed transactions. Neither packet is approved until its matching auditor returns PASS.
+6. Reviewer findings trigger targeted repair of the current work. Preserve valid accepted material and stable deficiency identity.
+7. Allow one targeted researcher/auditor repair cycle per reviewed track. If the re-audit still returns REPAIR, stop and surface the remaining deficiencies rather than entering reviewer/worker ping-pong.
 8. The synthesizer runs only after both research tracks pass review. It receives approved inputs only and performs no new research.
-9. The coordinator does not perform specialist research or specialist-owned bookkeeping. Each specialist owns the tools and mechanics required by its own contract.
-10. The final output is research guidance for later design or implementation work. Inspiration itself does not make the product or silently convert research into a design mandate.
+9. The coordinator does not perform specialist research or specialist-owned bookkeeping. Each specialist owns the tools and mechanics required by its contract.
+10. The final output is research guidance for later design or implementation work. Inspiration does not silently turn research into a design mandate.
 
 ## Required specialists
 
-Use these exact registered specialists:
+Inspiration requires these exact registered specialists:
 
 - `inspiration-brief`
 - `inspiration-visual-researcher`
@@ -33,48 +33,35 @@ Use these exact registered specialists:
 - `inspiration-product-auditor`
 - `inspiration-synthesizer`
 
-Do not replace a required specialist with a generic child or parent-thread semantic judgment. Close each child after consuming its result.
+Spawn a fresh child for each required stage and close it after consuming its result. Do not replace a required specialist with a generic child or parent-thread semantic judgment. If a required specialist cannot run, fail that stage closed.
 
 ## Start
 
 1. Resolve `PROJECT_ROOT`, the user's research goal, and the authorized context scope.
 2. Spawn `inspiration-brief` with `PROJECT_ROOT`, `RESEARCH_GOAL`, `AUTHORIZED_CONTEXT`, and `.inspiration/work/brief.md` as `BRIEF_PATH`.
-3. If the specialist returns `NEEDS_USER`, ask only its returned questions and rerun it with the answers.
-4. Continue only after the brief returns `READY`.
+3. If it returns `NEEDS_USER`, ask only its returned questions and rerun the specialist with the answers.
+4. Continue only after it returns `READY`.
 
-The completed brief is the semantic input for later research stages. Do not supplement it with the original prompt or raw ideation unless a specialist explicitly requires one narrow authorized excerpt to resolve a named ambiguity.
+Do not supplement the approved brief with the original prompt or raw ideation unless a specialist explicitly requires one narrow authorized excerpt to resolve a named ambiguity.
 
-## Visual research
+## Visual research transaction
 
-Use:
+Use `.inspiration/work/visual-research.md` as `PACKET_PATH` and `.inspiration/work/visual-audit.md` as `AUDIT_PATH`.
 
-- packet: `.inspiration/work/visual-research.md`
-- audit: `.inspiration/work/visual-audit.md`
-- assets: `.inspiration/assets/visual/`
+1. Spawn `inspiration-visual-researcher` in `INITIAL` mode with `PROJECT_ROOT`, `BRIEF_PATH`, and `PACKET_PATH`.
+2. `READY`: spawn `inspiration-visual-auditor` with `PROJECT_ROOT`, `BRIEF_PATH`, `PACKET_PATH`, and `AUDIT_PATH`.
+3. Auditor `PASS`: the visual track is approved.
+4. Auditor `REPAIR`: run one fresh researcher repair with `MODE: REPAIR`, `AUDIT_PATH`, and the relevant repair history, then re-audit with the prior deficiency ledger.
+5. Researcher or auditor `BLOCKED`: surface the external blocker and preserve the current work.
+6. Re-audit `REPAIR`: surface the remaining deficiencies and stop the track.
 
-Spawn `inspiration-visual-researcher` in `INITIAL` mode with the project, brief, and packet paths.
+## Product / UX research transaction
 
-When it returns `READY`, spawn `inspiration-visual-auditor` with the project, brief, packet, and audit paths.
+After visual PASS, use `.inspiration/work/product-research.md` as `PACKET_PATH` and `.inspiration/work/product-audit.md` as `AUDIT_PATH`.
 
-- `PASS`: visual research is approved.
-- `REPAIR`: rerun the visual researcher in `REPAIR` mode with the audit path and relevant repair history, then audit the revised packet again.
-- `BLOCKED`: surface the external blocker and preserve the current work.
+Run the same researcher → auditor → optional single targeted repair pattern with `inspiration-product-researcher` and `inspiration-product-auditor`.
 
-Continue targeted repair and review until PASS or a genuine external blocker prevents further progress.
-
-## Product / UX research
-
-Use:
-
-- packet: `.inspiration/work/product-research.md`
-- audit: `.inspiration/work/product-audit.md`
-- assets: `.inspiration/assets/product/`
-
-After visual PASS, spawn `inspiration-product-researcher` in `INITIAL` mode with the project, brief, and packet paths.
-
-When it returns `READY`, spawn `inspiration-product-auditor` with the project, brief, packet, and audit paths.
-
-Handle `PASS`, `REPAIR`, and `BLOCKED` the same way as the visual transaction. Repairs remain targeted to the auditor's deficiencies and preserve valid prior work.
+Do not proceed to synthesis without product PASS.
 
 ## Synthesis
 
@@ -90,10 +77,19 @@ After both auditors PASS, spawn `inspiration-synthesizer` with:
 
 Use `.inspiration/report.md` for `REPORT_PATH` unless the user requested another path.
 
-Verify that the synthesizer returns `COMPLETE` and that the report exists. Return the report path and a concise summary to the user.
+`COMPLETE`: verify the report exists, then return its path and a concise summary.
+`BLOCKED`: surface the synthesizer's blocker.
+
+## Parent-owned mechanics
+
+The parent owns only workflow mechanics: resolving project/goal/context scope; assigning standard brief/packet/audit/report paths; serial child lifecycle; forwarding exact child outputs, verdicts, and prior deficiencies; enforcing the single repair allowance and stage gates; verifying expected output files; and returning the final result.
+
+The parent must not replace Brief, Researcher, Auditor, or Synthesizer semantic work with its own substitute.
+
+Do not infer that a stage passed merely because an expected file exists. Approval comes from the corresponding specialist verdict.
 
 ## Completion boundary
 
-Inspiration is complete only when both research tracks have auditor PASS verdicts and the synthesizer has produced the final report.
+Inspiration is complete only when both research tracks have auditor PASS verdicts and the synthesizer returns COMPLETE with the final report.
 
 Do not continue into product design or implementation unless the user separately asks for that work outside the Inspiration workflow.
