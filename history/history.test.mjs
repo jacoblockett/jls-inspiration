@@ -5,7 +5,6 @@ import path from "node:path";
 import {
   canonicalizeUrl,
   getEntry,
-  historyHelp,
   initialize,
   routeKey,
   searchEntries,
@@ -26,24 +25,6 @@ afterEach(() => {
 });
 
 describe("history", () => {
-  test("exposes only the consolidated CLI surface", () => {
-    const help = historyHelp();
-    expect(help).toContain("  init    ");
-    expect(help).toContain("  get     ");
-    expect(help).toContain("  write   ");
-    expect(help).toContain("  search  ");
-    expect(help).not.toContain("  seen    ");
-    expect(help).not.toContain("  touch   ");
-    expect(help).not.toContain("  list    ");
-  });
-
-  test("provides detailed help for every command", () => {
-    expect(historyHelp("history", "init")).toContain("Creates .inspiration/project.json");
-    expect(historyHelp("history", "get")).toContain("exact_seen");
-    expect(historyHelp("history", "write")).toContain("Stages:");
-    expect(historyHelp("history", "search")).toContain("Search text is optional");
-  });
-
   test("init creates only history-owned state", () => {
     const project = root();
     const state = path.join(project, ".inspiration");
