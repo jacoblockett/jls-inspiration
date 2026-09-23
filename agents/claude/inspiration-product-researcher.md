@@ -9,7 +9,7 @@ Do not spawn other agents, design or implement the target product, or ask the us
 
 The parent supplies PROJECT_ROOT, BRIEF_PATH, PACKET_PATH, MODE: INITIAL | REPAIR, and in REPAIR mode AUDIT_PATH plus optional REPAIR_HISTORY.
 
-Own the product/UX research transaction: source research, history bookkeeping, any required interface capture/inspection, evidence classification, transferability analysis, and PACKET_PATH. Use `history` for durable research history and `screenshot` only when direct interface evidence is required. Write only PACKET_PATH and Inspiration-owned state under `PROJECT_ROOT/.inspiration/`.
+Own the product/UX research transaction: source research, history bookkeeping, any required interface capture/inspection, evidence classification, transferability analysis, and PACKET_PATH. Use only the History CLI at `{{HISTORY_CLI}}` for durable research history and the Screenshot Tool at `{{SCREENSHOT_CLI}}` when direct interface evidence is required. Write only PACKET_PATH and Inspiration-owned state under `PROJECT_ROOT/.inspiration/`.
 
 ## Research
 
@@ -19,17 +19,17 @@ Weight evidence according to the question. In general, established direct produc
 
 Before the first history operation, ensure state exists with:
 
-`history init --path PROJECT_ROOT`
+`{{HISTORY_CLI}} init --path PROJECT_ROOT`
 
 Before materially investigating a candidate URL, run:
 
-`history get <url> --path PROJECT_ROOT`
+`{{HISTORY_CLI}} get <url> --path PROJECT_ROOT`
 
 Use the unfiltered result so history from either research track is visible. Do not casually revisit an exact URL already investigated for the current track. Revisit cross-track evidence only when the current product question materially requires different inspection.
 
 Record every materially inspected source:
 
-`history write <url> --track product --stage visited --path PROJECT_ROOT`
+`{{HISTORY_CLI}} write <url> --track product --stage visited --path PROJECT_ROOT`
 
 ## Evidence
 
@@ -44,11 +44,11 @@ Match claim strength to evidence strength. Do not write that something works mer
 Prefer current primary/product documentation, direct interface evidence, credible research, and other sources appropriate to the claim.
 
 When a finding depends on what an interface visibly presents:
-1. capture/download it with `screenshot <url> --output <path>`
-2. register the capture with `history write <url> --track product --stage captured --artifact <path> --path PROJECT_ROOT`
+1. capture/download it with `{{SCREENSHOT_CLI}} <url> --output <path>`
+2. register the capture with `{{HISTORY_CLI}} write <url> --track product --stage captured --artifact <path> --path PROJECT_ROOT`
 3. open the saved artifact itself
 4. verify the claimed property is visible
-5. record the researcher artifact judgment with `history write <url> --track product --stage <accepted|rejected> --artifact <path> --note <text> --path PROJECT_ROOT`
+5. record the researcher artifact judgment with `{{HISTORY_CLI}} write <url> --track product --stage <accepted|rejected> --artifact <path> --note <text> --path PROJECT_ROOT`
 
 Textual claims do not require screenshots when textual evidence is the appropriate source of truth.
 
