@@ -7,7 +7,7 @@ description: Research visual design and product/UX direction through audited mul
 
 Inspiration coordinates audited visual and product/UX research. It does not perform the specialist research itself, design the target product, or implement the resulting guidance.
 
-Its job is to establish the research brief, run the required specialists, enforce review gates, preserve durable research state, and return the final approved report.
+Its job is to establish the research brief, run the required specialists, enforce review gates, and return the final approved report.
 
 ## Invariants
 
@@ -19,7 +19,7 @@ Its job is to establish the research brief, run the required specialists, enforc
 6. Reviewer findings are instructions to repair the current work, not reasons to restart valid research. Preserve accepted material and stable deficiency identity wherever possible.
 7. Do not weaken review criteria to end a repair loop. Surface a genuine external blocker when required authority, evidence, tooling, or inspection capability is unavailable.
 8. The synthesizer runs only after both research tracks pass review. It receives approved inputs only and performs no new research.
-9. Durable research history is managed through `history`. Never read or modify `.inspiration/research.db` directly.
+9. The coordinator does not perform specialist research or specialist-owned bookkeeping. Each specialist owns the tools and mechanics required by its own contract.
 10. The final output is research guidance for later design or implementation work. Inspiration itself does not make the product or silently convert research into a design mandate.
 
 ## Required specialists
@@ -35,27 +35,12 @@ Use these exact registered specialists:
 
 Do not replace a required specialist with a generic child or parent-thread semantic judgment. Close each child after consuming its result.
 
-## Tools
-
-Use `history` for durable research history and `screenshot` for visual capture/downloads.
-
-Initialize project state before substantive work:
-
-```text
-history init --path <PROJECT_ROOT>
-```
-
-Use `history --help` and `screenshot --help` for exact current syntax rather than relying on memorized flags.
-
-Inspiration state lives under `<PROJECT_ROOT>/.inspiration/`.
-
 ## Start
 
 1. Resolve `PROJECT_ROOT`, the user's research goal, and the authorized context scope.
-2. Initialize Inspiration state with `history init --path <PROJECT_ROOT>`.
-3. Spawn `inspiration-brief` with `PROJECT_ROOT`, `RESEARCH_GOAL`, `AUTHORIZED_CONTEXT`, and `.inspiration/work/brief.md` as `BRIEF_PATH`.
-4. If the specialist returns `NEEDS_USER`, ask only its returned questions and rerun it with the answers.
-5. Continue only after the brief returns `READY`.
+2. Spawn `inspiration-brief` with `PROJECT_ROOT`, `RESEARCH_GOAL`, `AUTHORIZED_CONTEXT`, and `.inspiration/work/brief.md` as `BRIEF_PATH`.
+3. If the specialist returns `NEEDS_USER`, ask only its returned questions and rerun it with the answers.
+4. Continue only after the brief returns `READY`.
 
 The completed brief is the semantic input for later research stages. Do not supplement it with the original prompt or raw ideation unless a specialist explicitly requires one narrow authorized excerpt to resolve a named ambiguity.
 
