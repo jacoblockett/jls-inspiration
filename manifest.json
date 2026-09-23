@@ -35,5 +35,33 @@
       "marker": "project.json",
       "description": "Inspiration research history, captured evidence, working packets, and synthesized report"
     }
-  ]
+  ],
+  "tools": {
+    "history": {
+      "artifacts": {
+        "windows-x64": "bin/history.exe",
+        "windows-arm64": "bin/history.exe",
+        "macos-x64": "bin/history",
+        "macos-arm64": "bin/history",
+        "linux-x64-gnu": "bin/history",
+        "linux-arm64-gnu": "bin/history",
+        "linux-x64-musl": "bin/history",
+        "linux-arm64-musl": "bin/history"
+      },
+      "token": "HISTORY_CLI"
+    },
+    "screenshot": {
+      "artifacts": {
+        "windows-x64": "bin/screenshot.exe",
+        "windows-arm64": "bin/screenshot.exe",
+        "macos-x64": "bin/screenshot",
+        "macos-arm64": "bin/screenshot",
+        "linux-x64-gnu": "bin/screenshot",
+        "linux-arm64-gnu": "bin/screenshot",
+        "linux-x64-musl": "bin/screenshot",
+        "linux-arm64-musl": "bin/screenshot"
+      },
+      "token": "SCREENSHOT_CLI"
+    }
+  }
 }
