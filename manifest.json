@@ -28,19 +28,6 @@
       ]
     }
   },
-  "runtime": "executable",
-  "runtime_artifacts": {
-    "windows-x64": "runtime/windows-x64/inspiration.exe",
-    "windows-arm64": "runtime/windows-arm64/inspiration.exe",
-    "macos-x64": "runtime/macos-x64/inspiration",
-    "macos-arm64": "runtime/macos-arm64/inspiration",
-    "linux-x64-gnu": "runtime/linux-x64-gnu/inspiration",
-    "linux-arm64-gnu": "runtime/linux-arm64-gnu/inspiration",
-    "linux-x64-musl": "runtime/linux-x64-musl/inspiration",
-    "linux-arm64-musl": "runtime/linux-arm64-musl/inspiration"
-  },
-  "runtime_cli": "inspiration",
-  "cli_token": "INSPIRATION_CLI",
   "instruction_fragment": "AGENTS.md",
   "generated_data": [
     {
