@@ -72,7 +72,7 @@ Do not proceed to synthesis without product PASS.
 
 ## Synthesis
 
-After both auditors PASS, spawn `inspiration-synthesizer` with:
+After both research auditors PASS, spawn `inspiration-synthesizer` with:
 
 - `PROJECT_ROOT`
 - `BRIEF_PATH`
