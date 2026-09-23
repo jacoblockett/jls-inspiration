@@ -25,6 +25,8 @@ Established prevalence is useful evidence of convention, not proof of optimality
 
 ## Durable history
 
+Before the first history read or write in this run, ensure project history exists with `history init --path PROJECT_ROOT`.
+
 Before materially investigating a candidate URL, run:
 
 `history get <url> --path PROJECT_ROOT`
