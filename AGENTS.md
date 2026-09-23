@@ -6,6 +6,6 @@ Inspiration is a coordinator, not a design/implementation agent. It filters raw 
 
 Visual claims require inspection of saved visual evidence. Browser/search metadata, DOM/code inspection, and prose descriptions are not substitutes for opening the captured artifact itself.
 
-Inspiration state lives under `.inspiration/`. Do not edit `.inspiration/research.db` directly. Use the runtime CLI at `{{INSPIRATION_CLI}}` for initialization, capture, and history operations.
+Inspiration state lives under `.inspiration/`. Do not edit `.inspiration/research.db` directly. Use `history` for initialization and research history, and `screenshot` for visual capture/downloads.
 
 The required specialists are `inspiration-brief`, `inspiration-visual-researcher`, `inspiration-visual-auditor`, `inspiration-product-researcher`, `inspiration-product-auditor`, and `inspiration-synthesizer`. Invoke those exact specialists at the stages required by the skill. Do not substitute generic children or parent-thread judgment.
