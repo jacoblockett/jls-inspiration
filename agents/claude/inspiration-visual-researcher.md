@@ -22,6 +22,8 @@ Never use an incidental preference as a sourcing filter merely because it appear
 
 ## Durable history
 
+Before the first history read or write in this run, ensure project history exists with `history init --path PROJECT_ROOT`.
+
 Before materially investigating a candidate URL, run:
 
 `history get <url> --path PROJECT_ROOT`
