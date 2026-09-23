@@ -257,6 +257,11 @@ jobs:
             grep -q "^name: inspiration-$agent$" "agents/claude/inspiration-$agent.md"
           done
 
+          [[ "$(jq -r '.tools.history.token' manifest.json)" == HISTORY_CLI ]]
+          [[ "$(jq -r '.tools.screenshot.token' manifest.json)" == SCREENSHOT_CLI ]]
+          test "$(jq '.tools.history.artifacts | length' manifest.json)" -eq 8
+          test "$(jq '.tools.screenshot.artifacts | length' manifest.json)" -eq 8
+
           rm -rf build/release
           mkdir -p build/release
           jq '
@@ -277,13 +282,20 @@ jobs:
             test -f "$screenshot_source"
             rm -rf "$stage"
             mkdir -p "$stage/bin"
-            cp SKILL.md AGENTS.md LICENSE manifest.json "$stage/"
+            cp SKILL.md AGENTS.md LICENSE "$stage/"
             cp -R agents "$stage/agents"
             cp "$history_source" "$stage/bin/$history"
             cp "$screenshot_source" "$stage/bin/$screenshot"
             if [[ "$target" != windows-* ]]; then
               chmod +x "$stage/bin/$history" "$stage/bin/$screenshot"
             fi
+
+            history_path="bin/$history"
+            screenshot_path="bin/$screenshot"
+            jq --arg target "$target" --arg history_path "$history_path" --arg screenshot_path "$screenshot_path" '
+              .tools.history.artifacts = {($target): $history_path}
+              | .tools.screenshot.artifacts = {($target): $screenshot_path}
+            ' manifest.json > "$stage/manifest.json"
 
             (cd "$stage" && zip -q -r "$archive" .)
             rm -rf "$stage"
