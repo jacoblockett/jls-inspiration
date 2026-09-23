@@ -19,7 +19,7 @@ Its job is to establish the research brief, run the required specialists, enforc
 6. Reviewer findings are instructions to repair the current work, not reasons to restart valid research. Preserve accepted material and stable deficiency identity wherever possible.
 7. Do not weaken review criteria to end a repair loop. Surface a genuine external blocker when required authority, evidence, tooling, or inspection capability is unavailable.
 8. The synthesizer runs only after both research tracks pass review. It receives approved inputs only and performs no new research.
-9. Durable research state is runtime-managed. Never read or modify `.inspiration/research.db` directly.
+9. Durable research history is managed through `history`. Never read or modify `.inspiration/research.db` directly.
 10. The final output is research guidance for later design or implementation work. Inspiration itself does not make the product or silently convert research into a design mandate.
 
 ## Required specialists
@@ -35,28 +35,24 @@ Use these exact registered specialists:
 
 Do not replace a required specialist with a generic child or parent-thread semantic judgment. Close each child after consuming its result.
 
-## Runtime
+## Tools
 
-Use the Inspiration CLI at:
-
-```text
-{{INSPIRATION_CLI}}
-```
+Use `history` for durable research history and `screenshot` for visual capture/downloads.
 
 Initialize project state before substantive work:
 
 ```text
-{{INSPIRATION_CLI}} init --path <PROJECT_ROOT>
+history init --path <PROJECT_ROOT>
 ```
 
-Use the runtime's `history` and `capture` commands for research history and saved evidence. Use `--help` for exact current syntax rather than relying on memorized flags.
+Use `history --help` and `screenshot --help` for exact current syntax rather than relying on memorized flags.
 
-State lives under `<PROJECT_ROOT>/.inspiration/`.
+Inspiration state lives under `<PROJECT_ROOT>/.inspiration/`.
 
 ## Start
 
 1. Resolve `PROJECT_ROOT`, the user's research goal, and the authorized context scope.
-2. Initialize Inspiration state.
+2. Initialize Inspiration state with `history init --path <PROJECT_ROOT>`.
 3. Spawn `inspiration-brief` with `PROJECT_ROOT`, `RESEARCH_GOAL`, `AUTHORIZED_CONTEXT`, and `.inspiration/work/brief.md` as `BRIEF_PATH`.
 4. If the specialist returns `NEEDS_USER`, ask only its returned questions and rerun it with the answers.
 5. Continue only after the brief returns `READY`.
