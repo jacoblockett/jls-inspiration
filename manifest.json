@@ -10,6 +10,7 @@
     "codex": {
       "agents": [
         "agents/codex/inspiration-brief.toml",
+        "agents/codex/inspiration-brief-auditor.toml",
         "agents/codex/inspiration-visual-researcher.toml",
         "agents/codex/inspiration-visual-auditor.toml",
         "agents/codex/inspiration-product-researcher.toml",
@@ -20,6 +21,7 @@
     "claude": {
       "agents": [
         "agents/claude/inspiration-brief.md",
+        "agents/claude/inspiration-brief-auditor.md",
         "agents/claude/inspiration-visual-researcher.md",
         "agents/claude/inspiration-visual-auditor.md",
         "agents/claude/inspiration-product-researcher.md",
