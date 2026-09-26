@@ -170,7 +170,7 @@ jobs:
 
           grep -q '^name: inspiration$' SKILL.md
           for agent in brief brief-auditor visual-researcher visual-auditor product-researcher product-auditor synthesizer; do
-            grep -q "^name = "inspiration-$agent"$" "agents/codex/inspiration-$agent.toml"
+            grep -q "^name = \"inspiration-$agent\"$" "agents/codex/inspiration-$agent.toml"
             grep -q "^name: inspiration-$agent$" "agents/claude/inspiration-$agent.md"
           done
 
