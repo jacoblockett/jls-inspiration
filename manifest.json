@@ -1,7 +1,6 @@
 {
   "name": "inspiration",
   "version": "0.1.0",
-  "min_installer": "0.4.1",
   "description": "Audited multi-source research for visual design and product/UX direction",
   "skill_files": [
     "SKILL.md"
