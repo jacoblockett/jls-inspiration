@@ -13,11 +13,6 @@ on:
         required: false
         default: ''
         type: string
-      release_tag:
-        description: Release tag used in generated artifact URLs
-        required: false
-        default: dev
-        type: string
 
 permissions:
   contents: read
@@ -151,7 +146,6 @@ jobs:
       - name: Package and verify complete Inspiration release
         shell: bash
         env:
-          RELEASE_TAG: ${{ inputs.release_tag }}
           BUILD_VERSION: ${{ needs.prepare.outputs.version }}
         run: |
           set -euo pipefail
@@ -181,11 +175,6 @@ jobs:
 
           rm -rf build/release
           mkdir -p build/release
-          jq --arg version "$version" '
-            {name, version: $version, description, artifacts: {}}
-            + (if has("dependencies") then {dependencies} else {} end)
-          ' manifest.json > build/release/manifest.json
-
           for i in "${!targets[@]}"; do
             target="${targets[$i]}"
             history="${histories[$i]}"
@@ -218,19 +207,9 @@ jobs:
             (cd "$stage" && zip -q -r "$archive" .)
             rm -rf "$stage"
 
-            sha256="$(sha256sum "$archive" | cut -d' ' -f1)"
-            url="https://github.com/jacoblockett/jls-inspiration/releases/download/$RELEASE_TAG/inspiration-$target.zip"
-            tmp="$(mktemp)"
-            jq --arg target "$target" --arg url "$url" --arg sha256 "$sha256"               '.artifacts[$target] = {url: $url, sha256: $sha256}'               build/release/manifest.json > "$tmp"
-            mv "$tmp" build/release/manifest.json
           done
 
-          test "$(find build/release -maxdepth 1 -type f | wc -l)" -eq 9
-          test "$(jq '.artifacts | length' build/release/manifest.json)" -eq 8
-          jq -e --slurp '
-            .[0].description == .[1].description
-            and (.[0].dependencies // null) == (.[1].dependencies // null)
-          ' build/release/manifest.json manifest.json >/dev/null
+          test "$(find build/release -maxdepth 1 -type f | wc -l)" -eq 8
 
       - name: Upload verified release bundle
         uses: actions/upload-artifact@v4
